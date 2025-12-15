@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>داشبورد مدیر — سامانه انتخاب واحد</title>
+    <link rel="stylesheet" href="css/dashboard-admin.css" />
+  </head>
+  <body>
+    <div id="app" class="app-root">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar" aria-label="منوی اصلی">
+        <div class="brand">
+          <div class="logo">
+            <img
+              src="images/logo.jpg"
+              alt="University Logo"
+              style="width: 100%; height: 100%; border-radius: 12px"
+            />
+          </div>
+          <div class="brand-txt">
+            <div class="title">سامانه انتخاب واحد</div>
+            <div class="subtitle muted">پنل مدیریت</div>
+          </div>
+        </div>
+
+        <nav class="menu" role="navigation" aria-label="ناوبری اصلی">
+          <button
+            class="menu-item active"
+            data-panel="overview"
+            aria-pressed="true"
+          >
+            🏠 نمای کلی
+          </button>
+          <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
+          <button class="menu-item" data-panel="create-user">
+            ➕ افزودن کاربر
+          </button>
+          <button class="menu-item" data-panel="profile">⚙️ پروفایل</button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="muted small">نسخه 1.0</div>
+          <div class="muted small">© دانشگاه</div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main-area">
+        <!-- header -->
+        <header class="topbar" role="banner">
+          <div class="left">
+            <button id="mobileToggle" class="icon-btn" aria-label="نمایش منو">
+              ☰
+            </button>
+            <h1 id="pageTitle" class="page-title">نمای کلی</h1>
+          </div>
+
+          <div class="right">
+            <div class="user-pill" id="userPill" aria-hidden="false">
+              <div class="avatar" id="avatar">
+                <img
+                  src="images/avatar.jpg"
+                  alt="User avatar"
+                  style="width: 100%; height: 100%; border-radius: 10px"
+                />
+              </div>
+              <div class="user-info">
+                <div id="userName">مدیر</div>
+                <div class="muted small" id="userRole">ADMIN</div>
+              </div>
+            </div>
+            <button id="btnLogout" class="btn ghost">خروج</button>
+          </div>
+        </header>
+
+        <!-- content (SPA panels) -->
+        <main class="content" id="content" role="main">
+          <!-- PANEL: OVERVIEW -->
+          <section
+            id="panel-overview"
+            class="panel panel--active"
+            aria-labelledby="pageTitle"
+          >
+            <div class="overview-grid">
+              <div class="stat-card">
+                <div class="stat-title">تعداد دروس</div>
+                <div class="stat-value" id="statLessons">—</div>
+                <div class="stat-sub muted">در سیستم ثبت شده</div>
+              </div>
+
+              <div class="stat-card">
+                <div class="stat-title">فعالیت‌های اخیر</div>
+                <div id="activityList" class="activity-list muted">
+                  در حال بارگذاری...
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- PANEL: LESSONS -->
+          <section id="panel-lessons" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت دروس</h2>
+              <div class="panel-actions">
+                <button id="refreshLessons" class="btn ghost">رفرش</button>
+                <button id="openAddLesson" class="btn primary">
+                  ایجاد درس جدید
+                </button>
+              </div>
+            </div>
+
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="lessonsTable"
+                role="table"
+                aria-label="لیست دروس"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">عنوان درس</th>
+                    <th scope="col">واحد</th>
+                    <th scope="col">ایجادکننده</th>
+                    <th scope="col">نوع</th>
+                    <th scope="col">رشته</th>
+                    <th scope="col">کد</th>
+                    <th scope="col">پیش نیاز</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="lessonsTbody">
+                  <tr>
+                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: CREATE USER -->
+          <section id="panel-create-user" class="panel" style="display: none">
+            <h2 style="margin-bottom: 14px">افزودن کاربر جدید</h2>
+            <div class="card form-card" style="max-width: 820px; padding: 24px">
+              <!-- Role -->
+              <label class="label">نقش کاربر</label>
+              <select
+                id="roleSelect"
+                class="role-select"
+                style="margin-bottom: 20px"
+              >
+                <option value="ADMIN">مدیر</option>
+                <option value="PROFESSOR">استاد</option>
+                <option value="STUDENT" selected>دانشجو</option>
+              </select>
+
+              <!-- STEP INDICATOR -->
+              <div
+                class="steps-indicator"
+                style="display: flex; gap: 8px; margin-bottom: 20px"
+              >
+                <div class="step-dot active-step" id="stepDot1">1</div>
+                <div class="step-line"></div>
+                <div class="step-dot" id="stepDot2">2</div>
+                <div class="step-line"></div>
+                <div class="step-dot" id="stepDot3">3</div>
+              </div>
+
+              <!-- STEP 1 -->
+              <div class="step-panel" id="step1">
+                <h3 class="muted" style="margin-bottom: 16px">
+                  ۱. اطلاعات شخصی
+                </h3>
+
+                <div class="grid2">
+                  <div>
+                    <label class="label">نام</label>
+                    <input id="uFirst" />
+                  </div>
+                  <div>
+                    <label class="label">نام خانوادگی</label>
+                    <input id="uLast" />
+                  </div>
+                  <div>
+                    <label class="label">نام کاربری</label>
+                    <input id="uUsername" />
+                  </div>
+                  <div>
+                    <label class="label">جنسیت</label>
+                    <select id="uGender">
+                      <option value="MALE">مرد</option>
+                      <option value="FEMALE">زن</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="label">کد ملی</label>
+                    <input id="uNationalId" />
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px">
+                  <button id="goStep2" class="btn primary">مرحله بعد</button>
+                </div>
+              </div>
+
+              <!-- STEP 2 -->
+              <div class="step-panel hidden" id="step2">
+                <h3 class="muted" style="margin-bottom: 16px">
+                  ۲. اطلاعات تماس
+                </h3>
+
+                <div class="grid2">
+                  <div>
+                    <label class="label">شماره تماس</label>
+                    <input id="uPhone" />
+                  </div>
+                  <div style="grid-column: 1 / -1">
+                    <label class="label">آدرس</label>
+                    <textarea id="uAddress"></textarea>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px">
+                  <button id="backStep1" class="btn ghost">بازگشت</button>
+                  <button id="goStep3" class="btn primary">مرحله بعد</button>
+                </div>
+              </div>
+
+              <!-- STEP 3 -->
+              <div class="step-panel hidden" id="step3">
+                <h3 class="muted" style="margin-bottom: 16px">
+                  ۳. رمز عبور و اطلاعات تکمیلی
+                </h3>
+
+                <div class="grid2">
+                  <div>
+                    <label class="label">رمز عبور</label>
+                    <input id="uPass" type="password" />
+                  </div>
+                  <div>
+                    <label class="label">تکرار رمز عبور</label>
+                    <input id="uPass2" type="password" />
+                  </div>
+
+                  <!-- فیلدهای اختصاصی برای Professor و Student -->
+                  <div
+                    id="professorFields"
+                    style="display: none; grid-column: 1 / -1; margin-top: 8px"
+                  >
+                    <label class="label">دانشکده</label>
+                    <input id="uFaculty" />
+
+                    <label class="label">تحصیلات</label>
+                    <input id="uEducation" />
+                  </div>
+
+                  <div
+                    id="studentFields"
+                    style="display: none; grid-column: 1 / -1; margin-top: 8px"
+                  >
+                    <label class="label">رشته</label>
+                    <input id="uMajor" />
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 20px">
+                  <button id="backStep2" class="btn ghost">بازگشت</button>
+                  <button id="createUserBtn" class="btn primary">
+                    ایجاد کاربر
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <!-- PANEL: PROFILE -->
+          <section id="panel-profile" class="panel" style="display: none">
+            <h2>پروفایل من</h2>
+            <div class="card form-card">
+              <label>نام</label>
+              <input id="profileFirst" type="text" />
+              <label>نام خانوادگی</label>
+              <input id="profileLast" type="text" />
+              <label>رمز فعلی</label>
+              <input id="profileOld" type="password" />
+              <label>رمز جدید</label>
+              <input id="profileNew" type="password" />
+              <div class="form-actions">
+                <button id="changePassBtn" class="btn primary">
+                  تغییر رمز
+                </button>
+              </div>
+            </div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <!-- MODALS -->
+    <div
+      id="overlay"
+      class="overlay hidden"
+      tabindex="-1"
+      aria-hidden="true"
+    ></div>
+
+    <!-- Lesson Modal -->
+    <div
+      id="lessonModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="lessonModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="lessonModalTitle">ایجاد درس</h3>
+        <label>عنوان</label>
+        <input id="mTitle" type="text" />
+        <label>واحد</label>
+        <input id="mUnit" type="number" min="1" value="1" />
+        <label for="mType">نوع</label>
+        <select id="mType">
+          <option value="" selected disabled>انتخاب کنید…</option>
+          <option value="GENERAL">عمومی</option>
+          <option value="SPECIALIZED">تخصصی</option>
+          <option value="LAB">آزمایشگاه</option>
+          <option value="ELECTIVE">اختیاری</option>
+        </select>
+        <label>رشته</label>
+        <input id="mField" type="text" />
+        <label>کد</label>
+        <input id="mLessonId" type="text" />
+        <label for="mPrereq">پیش‌نیازها (قابل انتخاب چندگانه)</label>
+        <select id="mPrereq" multiple size="6"></select>
+        <div class="modal-actions">
+          <button id="closeLesson" class="btn ghost">انصراف</button>
+          <button id="saveLesson" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Delete Confirm Modal -->
+    <div
+      id="confirmModal"
+      class="modal small hidden"
+      role="alertdialog"
+      aria-modal="true"
+    >
+      <div class="modal-card">
+        <h3 id="confirmTitle">تأیید حذف</h3>
+        <p id="confirmText">آیا از حذف این مورد مطمئن هستید؟</p>
+        <div class="modal-actions">
+          <button id="cancelConfirm" class="btn ghost">خیر</button>
+          <button
+            id="okConfirm"
+            class="btn"
+            style="background: #ef4444; color: white"
+          >
+            بله، حذف کن
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/dashboard-admin.js"></script>
+  </body>
+</html>
