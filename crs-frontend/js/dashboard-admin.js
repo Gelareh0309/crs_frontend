@@ -3,6 +3,7 @@ const ENDPOINTS = {
   LESSON: "/lesson-admin",
   FACULTY: "/faculty",
   MAJOR: "/major",
+  CLASSROOM: "/classroom",
   CREATE_STUDENT: "/student",
   CREATE_PROFESSOR: "/professor",
   CREATE_ADMIN: "/admin",
@@ -108,6 +109,7 @@ function setActivePanel(name) {
     "panel-lessons",
     "panel-faculty",
     "panel-major",
+    "panel-classroom",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -157,6 +159,7 @@ $$(".menu-item").forEach((btn) => {
       if (panel === "lessons") loadLessons();
       if (panel === "faculty") loadFaculties();
       if (panel === "major") loadMajors();
+      if (panel === "classroom") loadClassrooms();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
@@ -281,6 +284,11 @@ let currentFacultyEditId = null;
 /* majors table */
 const majorsTbody = $("#majorsTbody");
 let currentMajorEditId = null;
+
+/* classrooms table */
+const classroomsTbody = $("#classroomsTbody");
+let currentClassroomEditId = null;
+
 async function loadMajors() {
   majorsTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
   try {
@@ -340,6 +348,40 @@ async function loadFaculties() {
   } catch (err) {
     console.error(err);
     facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت دانشکده‌ها</td></tr>`;
+  }
+}
+
+async function loadClassrooms() {
+  classroomsTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const classrooms = await apiFetch(ENDPOINTS.CLASSROOM);
+    if (!Array.isArray(classrooms) || classrooms.length === 0) {
+      classroomsTbody.innerHTML = `<tr><td colspan="5" class="muted">هیچ کلاسی یافت نشد</td></tr>`;
+      return;
+    }
+    classroomsTbody.innerHTML = classrooms
+      .map((c) => {
+        const facName =
+          (c.faculty && (c.faculty.name || c.faculty.title)) || "-";
+        return `<tr>
+        <td>${escapeHtml(String(c.roomNumber || c.room_number || "-"))}</td>
+        <td>${escapeHtml(String(c.capacity || "-"))}</td>
+        <td>${escapeHtml(facName)}</td>
+        <td>${formatDateISO(c.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            c._id || c.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            c._id || c.id || ""
+          }" style="margin-left:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    classroomsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت کلاس‌ها</td></tr>`;
   }
 }
 
@@ -498,6 +540,130 @@ async function confirmFacultyDelete(id) {
   }
 }
 
+/* delegates for edit/delete CLASSROOM */
+classroomsTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openClassroomEdit(id);
+  if (action === "delete") confirmClassroomDelete(id);
+});
+
+/* open add classroom modal */
+$("#openAddClassroom")?.addEventListener("click", async () => {
+  currentClassroomEditId = null;
+  $("#classroomModalTitle").textContent = "ایجاد کلاس";
+  $("#crRoom").value = "";
+  $("#crCapacity").value = 1;
+  await populateClassroomFacultySelect();
+  openModal("classroomModal");
+});
+
+async function populateClassroomFacultySelect(selectedId = "") {
+  const sel = $("#crFacultySelect");
+  if (!sel) return;
+  sel.innerHTML = "<option disabled>در حال بارگذاری…</option>";
+  try {
+    const faculties = await apiFetch(ENDPOINTS.FACULTY);
+    if (!Array.isArray(faculties) || faculties.length === 0) {
+      sel.innerHTML = "<option disabled>هیچ دانشکده‌ای یافت نشد</option>";
+      return;
+    }
+    sel.innerHTML = faculties
+      .map((f) => {
+        const id = f._id || f.id;
+        const name = f.name || f.title || "-";
+        return `<option value="${id}" ${
+          selectedId && selectedId === id ? "selected" : ""
+        }>${escapeHtml(name)}</option>`;
+      })
+      .join("");
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML = "<option disabled>خطا در دریافت دانشکده‌ها</option>";
+  }
+}
+
+/* save classroom */
+$("#saveClassroom")?.addEventListener("click", async () => {
+  const roomInput = $("#crRoom");
+  const capInput = $("#crCapacity");
+  const facSel = $("#crFacultySelect");
+  const roomRaw = roomInput?.value?.trim() || "";
+  const capacityRaw = capInput?.value || "";
+  const facultyId = facSel?.value || "";
+
+  if (!roomRaw || !capacityRaw || !facultyId) {
+    alert("شماره کلاس، ظرفیت و دانشکده را وارد کنید");
+    return;
+  }
+
+  const body = {
+    room_number: roomRaw,
+    capacity: Number(capacityRaw) || 0,
+    faculty: facultyId,
+  };
+
+  try {
+    if (currentClassroomEditId) {
+      await apiFetch(
+        ENDPOINTS.CLASSROOM + "/" + encodeURIComponent(currentClassroomEditId),
+        {
+          method: "PUT",
+          body,
+        }
+      );
+    } else {
+      await apiFetch(ENDPOINTS.CLASSROOM, {
+        method: "POST",
+        body,
+      });
+    }
+    closeModal("classroomModal");
+    await loadClassrooms();
+    await loadOverview();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در ذخیره کلاس");
+  }
+});
+
+async function openClassroomEdit(id) {
+  try {
+    const data = await apiFetch(
+      ENDPOINTS.CLASSROOM + "/" + encodeURIComponent(id)
+    );
+    currentClassroomEditId = id;
+    $("#classroomModalTitle").textContent = "ویرایش کلاس";
+    $("#crRoom").value = data.roomNumber || data.room_number || "";
+    $("#crCapacity").value = data.capacity || 1;
+    const currentFacultyId =
+      (data.faculty && (data.faculty._id || data.faculty.id)) ||
+      data.facultyId ||
+      "";
+    await populateClassroomFacultySelect(currentFacultyId);
+    openModal("classroomModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت کلاس");
+  }
+}
+
+async function confirmClassroomDelete(id) {
+  try {
+    await apiFetch(ENDPOINTS.CLASSROOM + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    closeModal("confirmModal");
+    await loadClassrooms();
+    await loadOverview();
+  } catch (error) {
+    console.error(error);
+    alert("خطا در حذف کلاس");
+  }
+}
+
 /* delegates for edit/delete LESSON */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
@@ -647,9 +813,13 @@ function closeModal(id) {
 $("#closeLesson").addEventListener("click", () => closeModal("lessonModal"));
 $("#closeFaculty")?.addEventListener("click", () => closeModal("facultyModal"));
 $("#closeMajor")?.addEventListener("click", () => closeModal("majorModal"));
+$("#closeClassroom")?.addEventListener("click", () =>
+  closeModal("classroomModal")
+);
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
   closeModal("facultyModal");
+  closeModal("classroomModal");
   closeModal("confirmModal");
 });
 

@@ -38,6 +38,9 @@
           <button class="menu-item" data-panel="major">
             🎓 مدیریت رشته‌ها
           </button>
+          <button class="menu-item" data-panel="classroom">
+            🏫 مدیریت کلاس‌ها
+          </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
@@ -137,6 +140,42 @@
                   </tr>
                 </thead>
                 <tbody id="lessonsTbody">
+                  <tr>
+                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: CLASSROOM -->
+          <section id="panel-classroom" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت کلاس‌ها</h2>
+              <div class="panel-actions">
+                <button id="refreshClassrooms" class="btn ghost">رفرش</button>
+                <button id="openAddClassroom" class="btn primary">
+                  ایجاد کلاس جدید
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="classroomsTable"
+                role="table"
+                aria-label="لیست کلاس‌ها"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">شماره کلاس</th>
+                    <th scope="col">ظرفیت</th>
+                    <th scope="col">دانشکده</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="classroomsTbody">
                   <tr>
                     <td colspan="5" class="muted">در حال بارگذاری...</td>
                   </tr>
@@ -412,6 +451,29 @@
         <div class="modal-actions">
           <button id="closeLesson" class="btn ghost">انصراف</button>
           <button id="saveLesson" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Classroom Modal -->
+    <div
+      id="classroomModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="classroomModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="classroomModalTitle">ایجاد کلاس</h3>
+        <label>شماره کلاس</label>
+        <input id="crRoom" type="text" />
+        <label>ظرفیت</label>
+        <input id="crCapacity" type="number" min="1" value="1" />
+        <label>دانشکده</label>
+        <select id="crFacultySelect"></select>
+        <div class="modal-actions">
+          <button id="closeClassroom" class="btn ghost">انصراف</button>
+          <button id="saveClassroom" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>
