@@ -1,18 +1,44 @@
-const API_BASE = "http://localhost:3001";
+const ENDPOINTS = {
+  LESSON: "/lesson-admin",
+  FACULTY: "/faculty",
+  MAJOR: "/major",
+  CLASSROOM: "/classroom",
+  SECTION: "/section",
+  CREATE_STUDENT: "/student",
+  CREATE_PROFESSOR: "/professor",
+  CREATE_ADMIN: "/admin",
+  CHANGE_PASS: "/change-password",
+  LOGIN: "/login",
+  REFRESH: "/refresh",
+};
 
 const sectionsTbody = document.getElementById("sectionsTbody");
 const searchInput = document.getElementById("searchInput");
 
+const dayNamesFa = {
+  MONDAY: "دوشنبه",
+  TUESDAY: "سه‌شنبه",
+  WEDNESDAY: "چهارشنبه",
+  THURSDAY: "پنجشنبه",
+  FRIDAY: "جمعه",
+  SATURDAY: "شنبه",
+  SUNDAY: "یکشنبه",
+};
+
+let allSections = [];
+
 // token helpers
 function getToken() {
-  return localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  return (
+    localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
+  );
 }
 
 // logout
 document.getElementById("btnLogout").addEventListener("click", () => {
   localStorage.removeItem("accessToken");
   sessionStorage.removeItem("accessToken");
-  window.location.href = "/../index.html";
+  window.location.href = "index.html";
 });
 
 // decode token for header
@@ -20,67 +46,94 @@ function loadStudentHeader() {
   const token = getToken();
   if (!token) return;
   try {
-    const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    document.getElementById("userName").textContent = payload.firstName ? payload.firstName + (payload.lastName ? " " + payload.lastName : "") : payload.username;
-    document.getElementById("avatar").textContent = payload.firstName ? payload.firstName[0].toUpperCase() : payload.username[0].toUpperCase();
+    const payload = JSON.parse(
+      atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+    );
+    const name = payload.firstName
+      ? payload.firstName + (payload.lastName ? " " + payload.lastName : "")
+      : payload.username || "دانشجو";
+    document.getElementById("userName").textContent = name;
+    document.getElementById("avatar").textContent = (name[0] || "S")
+      .toString()
+      .toUpperCase();
   } catch (e) {
     console.error("Invalid token", e);
   }
 }
 
-// format schedules
-function formatSchedules(schedules) {
-  if (!Array.isArray(schedules) || schedules.length === 0) return "-";
-  return schedules.map(s => `${s.day_of_week} ${s.start_time} - ${s.endTime}`).join("<br>");
+async function searchSection() {
+  const search = document.getElementById("searchInput").value;
+  loadSections(search);
 }
-
-// render sections
-async function loadSections() {
-  sectionsTbody.innerHTML = `<tr><td colspan="6" class="muted">در حال بارگذاری...</td></tr>`;
+// load all sections
+async function loadSections(search = "") {
+  sectionsTbody.innerHTML =
+    '<tr><td colspan="6" class="muted">در حال بارگذاری...</td></tr>';
   try {
-    const data = await apiFetch("/section", { auth: true });
+    const data = await apiFetch(`${ENDPOINTS.SECTION}?search=${search}`, {
+      method: "GET",
+    });
     if (!Array.isArray(data) || data.length === 0) {
-      sectionsTbody.innerHTML = `<tr><td colspan="6" class="muted">موردی وجود ندارد</td></tr>`;
+      sectionsTbody.innerHTML =
+        '<tr><td colspan="6" class="muted">هیچ سکشنی یافت نشد</td></tr>';
       return;
     }
-
-    renderTable(data);
+    allSections = Array.isArray(data) ? data : [];
+    renderTable();
   } catch (err) {
     console.error(err);
-    sectionsTbody.innerHTML = `<tr><td colspan="6" class="muted">خطا در دریافت اطلاعات</td></tr>`;
+    sectionsTbody.innerHTML =
+      '<tr><td colspan="6" class="muted">خطا در دریافت اطلاعات</td></tr>';
   }
 }
 
-function renderTable(sections) {
-  const query = searchInput.value.trim().toLowerCase();
-  const filtered = sections.filter(s => {
-    const lessonName = s.lesson?.title?.toLowerCase() || "";
-    const profName = s.professor ? (s.professor.firstName || "") + " " + (s.professor.lastName || "") : "";
-    return lessonName.includes(query) || profName.toLowerCase().includes(query);
-  });
-
-  if (filtered.length === 0) {
-    sectionsTbody.innerHTML = `<tr><td colspan="6" class="muted">موردی یافت نشد</td></tr>`;
+// render with search
+function renderTable() {
+  if (!allSections.length) {
+    sectionsTbody.innerHTML =
+      '<tr><td colspan="6" class="muted">موردی وجود ندارد</td></tr>';
     return;
   }
 
-  sectionsTbody.innerHTML = filtered.map(s => {
-    const lesson = s.lesson || {};
-    const prof = s.professor || {};
-    const classroom = s.classroom || {};
-    const capacityUsed = Array.isArray(s.students) ? s.students.length : 0;
-    return `<tr>
+  sectionsTbody.innerHTML = allSections
+    .map((s) => {
+      const lesson = s.lesson || {};
+      const userProf = s.professorUser || {};
+      const classroom = s.classroom || {};
+      const capacityUsed = Array.isArray(s.students) ? s.students.length : 0;
+
+      const fullProfName = userProf.firstName
+        ? userProf.firstName +
+          (userProf.lastName ? " " + userProf.lastName : "")
+        : userProf.username || "-";
+
+      const schedulesText = Array.isArray(s.schedules)
+        ? s.schedules
+            .map((sch) => {
+              const dow = sch.day_of_week || "";
+              const st = sch.start_time || "";
+              const et = sch.endTime || "";
+              if (!dow && !st && !et) return "";
+              const faDay = dayNamesFa[dow] || dow;
+              return `${faDay} ${st}-${et}`.trim();
+            })
+            .filter(Boolean)
+            .join("<br>")
+        : "-";
+
+      return `<tr>
       <td>${lesson.title || ""}</td>
-      <td>${prof.firstName ? prof.firstName + " " + (prof.lastName || "") : "-"}</td>
-      <td>${classroom.name || classroom.code || "-"}</td>
+      <td>${fullProfName}</td>
+      <td>${classroom.room_number || "-"}</td>
       <td>${lesson.unit || "-"}</td>
-      <td>${formatSchedules(s.schedules)}</td>
+      <td>${schedulesText}</td>
       <td>${capacityUsed} / ${s.capacity || "-"}</td>
     </tr>`;
-  }).join("");
+    })
+    .join("");
 }
 
-searchInput.addEventListener("input", () => loadSections());
+searchInput.addEventListener("input", renderTable);
 
 // init
 (function init() {
