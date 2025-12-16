@@ -1,6 +1,7 @@
 const API_BASE = "http://localhost:3001";
 const ENDPOINTS = {
   LESSON: "/lesson-admin",
+  FACULTY: "/faculty",
   CREATE_STUDENT: "/student",
   CREATE_PROFESSOR: "/professor",
   CREATE_ADMIN: "/admin",
@@ -87,13 +88,16 @@ function setActivePanel(name) {
   $("#pageTitle").textContent =
     {
       overview: "نمای کلی",
+
       lessons: "مدیریت دروس",
+      faculty: "مدیریت دانشکده‌ها",
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
   [
     "panel-overview",
     "panel-lessons",
+    "panel-faculty",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -117,6 +121,10 @@ function setActivePanel(name) {
   if (name === "profile") {
     document.getElementById("panel-profile").style.display = "block";
   }
+
+  if (name === "faculty") {
+    document.getElementById("panel-faculty").style.display = "block";
+  }
 }
 
 $$(".menu-item").forEach((btn) => {
@@ -132,6 +140,7 @@ $$(".menu-item").forEach((btn) => {
     } else {
       setActivePanel(panel);
       if (panel === "lessons") loadLessons();
+      if (panel === "faculty") loadFaculties();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
@@ -188,6 +197,8 @@ async function loadOverview() {
 
 /* ========== Lessons CRUD ========== */
 const lessonsTbody = $("#lessonsTbody");
+/* faculties table */
+
 let currentEditId = null;
 
 async function loadLessons() {
@@ -237,21 +248,130 @@ async function loadLessons() {
           }" style="margin-left:8px;background:#ef4444;color:white">حذف</button>
         </td>
       </tr>`;
-    })
-    .join("");
-  }catch (err) {
-  console.error(err);
-  lessonsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت دروس</td></tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    lessonsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت دروس</td></tr>`;
+  }
+}
+const facultiesTbody = $("#facultiesTbody");
+let currentFacultyEditId = null;
+async function loadFaculties() {
+  facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const faculties = await apiFetch(ENDPOINTS.FACULTY);
+    if (!Array.isArray(faculties) || faculties.length === 0) {
+      facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">هیچ دانشکده‌ای یافت نشد</td></tr>`;
+      return;
+    }
+    facultiesTbody.innerHTML = faculties
+      .map((f) => {
+        return `<tr>
+        <td>${escapeHtml(f.name || "-")}</td>
+        <td>${formatDateISO(f.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            f._id || f.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            f._id || f.id || ""
+          }" style="margin-left:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت دانشکده‌ها</td></tr>`;
   }
 }
 
+/* delegates for edit/delete FACULTY */
+facultiesTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openFacultyEdit(id);
+  if (action === "delete") confirmFacultyDelete(id);
+});
+
+/* open add faculty modal */
+$("#openAddFaculty")?.addEventListener("click", () => {
+  currentFacultyEditId = null;
+  $("#facultyModalTitle").textContent = "ایجاد دانشکده";
+  $("#fName").value = "";
+  openModal("facultyModal");
+});
+
+/* save faculty */
+$("#saveFaculty")?.addEventListener("click", async () => {
+  const name = $("#fName").value.trim();
+  if (!name) {
+    alert("نام دانشکده را وارد کنید");
+    return;
+  }
+  try {
+    if (currentFacultyEditId) {
+      await apiFetch(
+        ENDPOINTS.FACULTY + "/" + encodeURIComponent(currentFacultyEditId),
+        {
+          method: "PUT",
+          body: { name },
+        }
+      );
+    } else {
+      await apiFetch(ENDPOINTS.FACULTY, {
+        method: "POST",
+        body: { name },
+      });
+    }
+    closeModal("facultyModal");
+    await loadFaculties();
+    await loadOverview();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در ذخیره دانشکده");
+  }
+});
+
+async function openFacultyEdit(id) {
+  try {
+    const data = await apiFetch(
+      ENDPOINTS.FACULTY + "/" + encodeURIComponent(id)
+    );
+    currentFacultyEditId = id;
+    $("#facultyModalTitle").textContent = "ویرایش دانشکده";
+    $("#fName").value = data.name || "";
+    openModal("facultyModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت دانشکده");
+  }
+}
+
+async function confirmFacultyDelete(id) {
+  try {
+    await apiFetch(ENDPOINTS.FACULTY + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    closeModal("confirmModal");
+    await loadFaculties();
+    await loadOverview();
+  } catch (error) {
+    alert("خطا در دریافت دانشکده");
+  }
+}
+
+/* delegates for edit/delete LESSON */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
   if (!btn) return;
   const action = btn.dataset.action;
   const id = btn.dataset.id;
   if (action === "edit") openLessonEdit(id);
-  if (action === "delete") confirmDelete(id);
+  if (action === "delete") confirmDelete(id, ENDPOINTS.LESSON);
 });
 
 /* open add lesson modal */
@@ -351,7 +471,7 @@ async function openLessonEdit(id) {
 
 /* delete flow */
 let deleteTargetId = null;
-function confirmDelete(id) {
+function confirmDelete(id, deleteBaseUrl) {
   deleteTargetId = id;
   $("#confirmText").textContent =
     "آیا می‌خواهید این درس را حذف کنید؟ این عمل برگشت‌پذیر نیست.";
@@ -360,10 +480,9 @@ function confirmDelete(id) {
 $("#okConfirm").addEventListener("click", async () => {
   if (!deleteTargetId) return;
   try {
-    await apiFetch(
-      ENDPOINTS.LESSON + "/" + encodeURIComponent(deleteTargetId),
-      { method: "DELETE" }
-    );
+    await apiFetch(deleteBaseUrl + "/" + encodeURIComponent(deleteTargetId), {
+      method: "DELETE",
+    });
     closeModal("confirmModal");
     deleteTargetId = null;
     loadLessons();
@@ -389,8 +508,10 @@ function closeModal(id) {
   $("#overlay").setAttribute("aria-hidden", "true");
 }
 $("#closeLesson").addEventListener("click", () => closeModal("lessonModal"));
+$("#closeFaculty")?.addEventListener("click", () => closeModal("facultyModal"));
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
+  closeModal("facultyModal");
   closeModal("confirmModal");
 });
 

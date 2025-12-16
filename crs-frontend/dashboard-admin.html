@@ -32,6 +32,9 @@
           >
             🏠 نمای کلی
           </button>
+          <button class="menu-item" data-panel="faculty">
+            📚 مدیریت دانشکده
+          </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
@@ -131,6 +134,41 @@
                   </tr>
                 </thead>
                 <tbody id="lessonsTbody">
+                  <tr>
+                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: FACULTY -->
+          <section id="panel-faculty" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت دانشکده‌ها</h2>
+              <div class="panel-actions">
+                <button id="refreshFaculties" class="btn ghost">رفرش</button>
+                <button id="openAddFaculty" class="btn primary">
+                  ایجاد دانشکده جدید
+                </button>
+              </div>
+            </div>
+
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="facultiesTable"
+                role="table"
+                aria-label="لیست دانشکده‌ها"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">نام دانشکده</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="facultiesTbody">
                   <tr>
                     <td colspan="5" class="muted">در حال بارگذاری...</td>
                   </tr>
@@ -273,7 +311,7 @@
                     id="studentFields"
                     style="display: none; grid-column: 1 / -1; margin-top: 8px"
                   >
-                    <label class="label">کد رشته</label>
+                    <label class="label">رشته</label>
                     <input id="uMajor" />
                   </div>
                 </div>
@@ -350,6 +388,25 @@
         <div class="modal-actions">
           <button id="closeLesson" class="btn ghost">انصراف</button>
           <button id="saveLesson" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Faculty Modal -->
+    <div
+      id="facultyModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="facultyModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="facultyModalTitle">ایجاد دانشکده</h3>
+        <label>نام دانشکده</label>
+        <input id="fName" type="text" />
+        <div class="modal-actions">
+          <button id="closeFaculty" class="btn ghost">انصراف</button>
+          <button id="saveFaculty" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>
