@@ -169,7 +169,13 @@ $$(".menu-item").forEach((btn) => {
     // show section
     if (panel === "create-user") {
       setActivePanel("create-user");
-      renderUserForm("STUDENT"); // default
+      const roleSel = document.getElementById("roleSelect");
+      if (roleSel) {
+        roleSel.value = "STUDENT";
+      }
+      const stFields = document.getElementById("studentFields");
+      if (stFields) stFields.style.display = "block";
+      populateMajorSelect();
     } else {
       setActivePanel(panel);
       if (panel === "lessons") loadLessons();
@@ -1553,14 +1559,42 @@ $("#roleSelect").addEventListener("change", () => {
   $("#professorFields").style.display = role === "PROFESSOR" ? "block" : "none";
 
   $("#studentFields").style.display = role === "STUDENT" ? "block" : "none";
+
+  if (role === "STUDENT") {
+    populateMajorSelect();
+  }
 });
 
+async function populateMajorSelect() {
+  console.log();
+  const sel = $("#uMajor");
+  if (!sel) return;
+  sel.innerHTML =
+    '<option value="" disabled selected>در حال بارگذاری…</option>';
+  try {
+    const majors = await apiFetch(ENDPOINTS.MAJOR);
+    if (!Array.isArray(majors) || majors.length === 0) {
+      sel.innerHTML = '<option value="" disabled>رشته‌ای یافت نشد</option>';
+      return;
+    }
+    sel.innerHTML =
+      '<option value="" disabled selected>انتخاب رشته…</option>' +
+      majors
+        .map(
+          (m) =>
+            `<option value="${m.code || ""}">${escapeHtml(
+              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : "")
+            )}</option>`
+        )
+        .join("");
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML = '<option value="" disabled>خطا در دریافت رشته‌ها</option>';
+  }
+}
+
 document.getElementById("goStep2").addEventListener("click", () => {
-  if (
-    !$("#uFirst").value.trim() ||
-    !$("#uLast").value.trim() ||
-    !$("#uUsername").value.trim()
-  ) {
+  if (!$("#uFirst").value.trim() || !$("#uLast").value.trim()) {
     alert("لطفاً اطلاعات مرحله اول را کامل کنید.");
     return;
   }
@@ -1594,7 +1628,6 @@ $("#createUserBtn").addEventListener("click", async () => {
   const body = {
     firstName: $("#uFirst").value.trim(),
     lastName: $("#uLast").value.trim(),
-    username: $("#uUsername").value.trim(),
     gender: $("#uGender").value,
     nationalId: $("#uNationalId").value.trim(),
     phone: $("#uPhone").value.trim(),
@@ -1608,7 +1641,11 @@ $("#createUserBtn").addEventListener("click", async () => {
     body.education = $("#uEducation")?.value?.trim() || "";
   }
   if (role === "STUDENT") {
-    body.majorCode = $("#uMajor")?.value?.trim() || "";
+    body.majorCode = $("#uMajor")?.value || "";
+    if (!body.majorCode) {
+      alert("لطفاً رشته را انتخاب کنید.");
+      return;
+    }
   }
 
   if (!body.password || body.password !== body.confirmPassword) {
@@ -1636,7 +1673,6 @@ $("#createUserBtn").addEventListener("click", async () => {
     // reset form:
     $("#uFirst").value = "";
     $("#uLast").value = "";
-    $("#uUsername").value = "";
     $("#uGender").value = "MALE";
     $("#uNationalId").value = "";
     $("#uPhone").value = "";
@@ -1727,8 +1763,14 @@ function loadAdminHeader() {
   setActivePanel("overview");
   // load initial overview
   loadOverview();
-  // render initial user form default STUDENT
-  renderUserForm("STUDENT");
+  // ensure default role is STUDENT and major select is visible & populated
+  const roleSel = document.getElementById("roleSelect");
+  if (roleSel) {
+    roleSel.value = "STUDENT";
+  }
+  const stFields = document.getElementById("studentFields");
+  if (stFields) stFields.style.display = "block";
+  populateMajorSelect();
   // load profile from token if exists
   loadProfile();
 })();
