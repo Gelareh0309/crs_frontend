@@ -44,6 +44,9 @@
           <button class="menu-item" data-panel="section">
             📅 مدیریت سکشن‌ها
           </button>
+          <button class="menu-item" data-panel="student">
+            👨‍🎓 مدیریت دانشجویان
+          </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
@@ -225,6 +228,41 @@
                   </tr>
                 </thead>
                 <tbody id="sectionsTbody">
+                  <tr>
+                    <td colspan="7" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: STUDENT -->
+          <section id="panel-student" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت دانشجویان</h2>
+              <div class="panel-actions">
+                <button id="refreshStudents" class="btn ghost">رفرش</button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="studentsTable"
+                role="table"
+                aria-label="لیست دانشجویان"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">شماره دانشجویی</th>
+                    <th scope="col">نام</th>
+                    <th scope="col">رشته</th>
+                    <th scope="col">حداقل واحد</th>
+                    <th scope="col">حداکثر واحد</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="studentsTbody">
                   <tr>
                     <td colspan="7" class="muted">در حال بارگذاری...</td>
                   </tr>
@@ -561,6 +599,36 @@
         <div class="modal-actions" style="margin-top: 16px">
           <button id="closeSection" class="btn ghost">انصراف</button>
           <button id="saveSection" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Student Modal -->
+    <div
+      id="studentModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="studentModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="studentModalTitle">ویرایش دانشجو</h3>
+
+        <div class="muted small" style="margin-bottom: 8px">
+          <div>نام: <span id="stFullName"></span></div>
+          <div>شماره دانشجویی: <span id="stStudentId"></span></div>
+          <div>رشته: <span id="stMajorTitle"></span></div>
+        </div>
+
+        <label>حداقل واحد مجاز</label>
+        <input id="stMinUnit" type="number" min="0" />
+
+        <label>حداکثر واحد مجاز</label>
+        <input id="stMaxUnit" type="number" min="0" />
+
+        <div class="modal-actions" style="margin-top: 16px">
+          <button id="closeStudent" class="btn ghost">انصراف</button>
+          <button id="saveStudent" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>

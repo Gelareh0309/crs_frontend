@@ -102,6 +102,7 @@ function setActivePanel(name) {
       lessons: "مدیریت دروس",
       faculty: "مدیریت دانشکده‌ها",
       section: "مدیریت سکشن‌ها",
+      student: "مدیریت دانشجویان",
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
@@ -113,6 +114,7 @@ function setActivePanel(name) {
     "panel-major",
     "panel-classroom",
     "panel-section",
+    "panel-student",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -147,6 +149,9 @@ function setActivePanel(name) {
   if (name === "section") {
     document.getElementById("panel-section").style.display = "block";
   }
+  if (name === "student") {
+    document.getElementById("panel-student").style.display = "block";
+  }
 }
 
 /* hook menu */
@@ -167,6 +172,7 @@ $$(".menu-item").forEach((btn) => {
       if (panel === "major") loadMajors();
       if (panel === "classroom") loadClassrooms();
       if (panel === "section") loadSections();
+      if (panel === "student") loadStudents();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
@@ -300,6 +306,10 @@ let currentClassroomEditId = null;
 const sectionsTbody = $("#sectionsTbody");
 let currentSectionEditId = null;
 
+/* students table */
+const studentsTbody = $("#studentsTbody");
+let currentStudentEditId = null;
+
 /* day-of-week mapping (EN -> FA) */
 const dayNamesFa = {
   MONDAY: "دوشنبه",
@@ -406,10 +416,13 @@ async function loadClassrooms() {
     classroomsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت کلاس‌ها</td></tr>`;
   }
 }
+
+/* ====== Sections (with search) ====== */
 async function searchSection() {
   const search = document.getElementById("secSearch").value;
   loadSections(search);
 }
+
 async function loadSections(search = "") {
   sectionsTbody.innerHTML = `<tr><td colspan="7" class="muted">در حال بارگذاری...</td></tr>`;
   try {
@@ -1033,6 +1046,155 @@ async function confirmSectionDelete(id) {
   }
 }
 
+/* ========== Students (list & update) ========== */
+async function loadStudents() {
+  studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const students = await apiFetch(ENDPOINTS.CREATE_STUDENT);
+    if (!Array.isArray(students) || students.length === 0) {
+      studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">هیچ دانشجویی یافت نشد</td></tr>`;
+      return;
+    }
+    studentsTbody.innerHTML = students
+      .map((s) => {
+        const user = s.user || {};
+        const fullName = (
+          (user.firstName || "") +
+          " " +
+          (user.lastName || "")
+        ).trim();
+        const majorTitle = (s.major && s.major.title) || "-";
+        const minUnit =
+          typeof s.minUnit === "number" ? String(s.minUnit) : s.minUnit || "-";
+        const maxUnit =
+          typeof s.maxUnit === "number" ? String(s.maxUnit) : s.maxUnit || "-";
+        return `<tr>
+        <td>${escapeHtml(s.studentId || user.username || "-")}</td>
+        <td>${escapeHtml(fullName || user.username || "-")}</td>
+        <td>${escapeHtml(majorTitle)}</td>
+        <td>${escapeHtml(minUnit)}</td>
+        <td>${escapeHtml(maxUnit)}</td>
+        <td>${formatDateISO(s.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            s._id || s.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            s._id || s.id || ""
+          }" style="margin-right:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">خطا در دریافت دانشجویان</td></tr>`;
+  }
+}
+
+studentsTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openStudentEdit(id);
+  if (action === "delete") confirmStudentDelete(id);
+});
+
+$("#refreshStudents")?.addEventListener("click", () => {
+  loadStudents();
+});
+
+async function openStudentEdit(id) {
+  try {
+    const data = await apiFetch(
+      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(id)
+    );
+    currentStudentEditId = id;
+    $("#studentModalTitle").textContent = "ویرایش دانشجو";
+
+    const user = data.user || {};
+    const fullName = (
+      (user.firstName || "") +
+      " " +
+      (user.lastName || "")
+    ).trim();
+    $("#stFullName").textContent = fullName || user.username || "-";
+    $("#stStudentId").textContent = data.studentId || user.username || "-";
+    $("#stMajorTitle").textContent = (data.major && data.major.title) || "-";
+
+    $("#stMinUnit").value =
+      typeof data.minUnit === "number" ? data.minUnit : data.minUnit || "";
+    $("#stMaxUnit").value =
+      typeof data.maxUnit === "number" ? data.maxUnit : data.maxUnit || "";
+
+    openModal("studentModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت اطلاعات دانشجو");
+  }
+}
+
+$("#saveStudent")?.addEventListener("click", async () => {
+  if (!currentStudentEditId) {
+    alert("دانشجو مشخص نیست");
+    return;
+  }
+  const minRaw = $("#stMinUnit").value;
+  const maxRaw = $("#stMaxUnit").value;
+  if (minRaw === "" || maxRaw === "") {
+    alert("حداقل و حداکثر واحد را وارد کنید");
+    return;
+  }
+  const minUnit = Number(minRaw);
+  const maxUnit = Number(maxRaw);
+  if (isNaN(minUnit) || isNaN(maxUnit)) {
+    alert("مقادیر واحد باید عددی باشند");
+    return;
+  }
+  if (minUnit < 0 || maxUnit < 0) {
+    alert("مقادیر واحد نمی‌توانند منفی باشند");
+    return;
+  }
+  if (minUnit > maxUnit) {
+    alert("حداقل واحد نمی‌تواند از حداکثر بیشتر باشد");
+    return;
+  }
+
+  const body = { minUnit, maxUnit };
+
+  try {
+    await apiFetch(
+      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(currentStudentEditId),
+      {
+        method: "PUT",
+        body,
+      }
+    );
+    closeModal("studentModal");
+    await loadStudents();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در به‌روزرسانی دانشجو");
+  }
+});
+
+async function confirmStudentDelete(id) {
+  const ok = window.confirm(
+    "آیا از حذف این دانشجو مطمئن هستید؟ این عمل برگشت‌پذیر نیست."
+  );
+  if (!ok) return;
+  try {
+    await apiFetch(ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    await loadStudents();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در حذف دانشجو");
+  }
+}
+
 /* delegates for edit/delete LESSON */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
@@ -1186,11 +1348,13 @@ $("#closeClassroom")?.addEventListener("click", () =>
   closeModal("classroomModal")
 );
 $("#closeSection")?.addEventListener("click", () => closeModal("sectionModal"));
+$("#closeStudent")?.addEventListener("click", () => closeModal("studentModal"));
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
   closeModal("facultyModal");
   closeModal("classroomModal");
   closeModal("sectionModal");
+  closeModal("studentModal");
   closeModal("confirmModal");
 });
 
