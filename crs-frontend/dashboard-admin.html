@@ -33,7 +33,10 @@
             🏠 نمای کلی
           </button>
           <button class="menu-item" data-panel="faculty">
-            📚 مدیریت دانشکده
+            🏢 مدیریت دانشکده‌ها
+          </button>
+          <button class="menu-item" data-panel="major">
+            🎓 مدیریت رشته‌ها
           </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
@@ -134,6 +137,41 @@
                   </tr>
                 </thead>
                 <tbody id="lessonsTbody">
+                  <tr>
+                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: MAJOR -->
+          <section id="panel-major" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت رشته‌ها</h2>
+              <div class="panel-actions">
+                <button id="refreshMajors" class="btn ghost">رفرش</button>
+                <button id="openAddMajor" class="btn primary">
+                  ایجاد رشته جدید
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="majorsTable"
+                role="table"
+                aria-label="لیست رشته‌ها"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">نام رشته</th>
+                    <th scope="col">کد رشته</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="majorsTbody">
                   <tr>
                     <td colspan="5" class="muted">در حال بارگذاری...</td>
                   </tr>
@@ -374,6 +412,27 @@
         <div class="modal-actions">
           <button id="closeLesson" class="btn ghost">انصراف</button>
           <button id="saveLesson" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Major Modal -->
+    <div
+      id="majorModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="majorModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="majorModalTitle">ایجاد رشته</h3>
+        <label>نام رشته</label>
+        <input id="majName" type="text" />
+        <label>کد رشته</label>
+        <input id="majCode" type="text" />
+        <div class="modal-actions">
+          <button id="closeMajor" class="btn ghost">انصراف</button>
+          <button id="saveMajor" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>

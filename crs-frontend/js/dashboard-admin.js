@@ -2,6 +2,7 @@ const API_BASE = "http://localhost:3001";
 const ENDPOINTS = {
   LESSON: "/lesson-admin",
   FACULTY: "/faculty",
+  MAJOR: "/major",
   CREATE_STUDENT: "/student",
   CREATE_PROFESSOR: "/professor",
   CREATE_ADMIN: "/admin",
@@ -10,6 +11,7 @@ const ENDPOINTS = {
   REFRESH: "/refresh",
 };
 
+/* ================== Helpers ================== */
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const escapeHtml = (s) =>
@@ -27,6 +29,7 @@ const escapeHtml = (s) =>
           }[c])
       );
 
+/* format date => YYYY-MM-DD | HH:MM (local) */
 function formatDateISO(v) {
   if (!v) return "";
   const d = new Date(v);
@@ -39,6 +42,7 @@ function formatDateISO(v) {
   return `${yyyy}-${mm}-${dd} | ${hh}:${mi}`;
 }
 
+/* token helpers */
 function getToken() {
   return (
     localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
@@ -53,6 +57,7 @@ function removeToken() {
   sessionStorage.removeItem("accessToken");
 }
 
+/* fetch wrapper */
 async function apiFetch(
   path,
   { method = "GET", body = null, auth = true } = {}
@@ -78,13 +83,16 @@ async function apiFetch(
   return data;
 }
 
+/* ========== UI Boot & Navigation ========== */
 function setActivePanel(name) {
+  // menu
   $$(".menu-item").forEach((btn) => {
     btn.classList.toggle(
       "active",
       btn.dataset.panel === name || btn.dataset.section === name
     );
   });
+  // title
   $("#pageTitle").textContent =
     {
       overview: "نمای کلی",
@@ -94,10 +102,12 @@ function setActivePanel(name) {
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
+  // panels
   [
     "panel-overview",
     "panel-lessons",
     "panel-faculty",
+    "panel-major",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -110,6 +120,7 @@ function setActivePanel(name) {
         ? "block"
         : "none";
   });
+  // special: map names:
   if (name === "create-user")
     document.getElementById("panel-create-user").style.display = "block";
   if (name === "overview") {
@@ -125,15 +136,19 @@ function setActivePanel(name) {
   if (name === "faculty") {
     document.getElementById("panel-faculty").style.display = "block";
   }
+  if (name === "major") {
+    document.getElementById("panel-major").style.display = "block";
+  }
 }
 
+/* hook menu */
 $$(".menu-item").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     const panel = btn.dataset.panel || btn.dataset.section;
-
+    // clear active on others
     $$(".menu-item").forEach((x) => x.classList.remove("active"));
     btn.classList.add("active");
-
+    // show section
     if (panel === "create-user") {
       setActivePanel("create-user");
       renderUserForm("STUDENT"); // default
@@ -141,17 +156,20 @@ $$(".menu-item").forEach((btn) => {
       setActivePanel(panel);
       if (panel === "lessons") loadLessons();
       if (panel === "faculty") loadFaculties();
+      if (panel === "major") loadMajors();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
   });
 });
 
+/* mobile sidebar toggle */
 $("#mobileToggle").addEventListener("click", () => {
   const sb = $("#sidebar");
   sb.classList.toggle("open");
 });
 
+/* close sidebar on outside click (mobile) */
 document.addEventListener("click", (e) => {
   if (window.innerWidth < 1000) {
     if (!e.target.closest("#sidebar") && !e.target.closest("#mobileToggle"))
@@ -159,11 +177,13 @@ document.addEventListener("click", (e) => {
   }
 });
 
+/* logout */
 $("#btnLogout").addEventListener("click", () => {
   removeToken();
   window.location.href = "index.html";
 });
 
+/* ========== Overview ========== */
 async function loadOverview() {
   $("#statLessons").textContent = "...";
   $("#activityList").innerHTML = '<div class="muted">در حال بارگذاری...</div>';
@@ -257,6 +277,42 @@ async function loadLessons() {
 }
 const facultiesTbody = $("#facultiesTbody");
 let currentFacultyEditId = null;
+
+/* majors table */
+const majorsTbody = $("#majorsTbody");
+let currentMajorEditId = null;
+async function loadMajors() {
+  majorsTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const majors = await apiFetch(ENDPOINTS.MAJOR);
+    if (!Array.isArray(majors) || majors.length === 0) {
+      majorsTbody.innerHTML = `<tr><td colspan="5" class="muted">هیچ رشته‌ای یافت نشد</td></tr>`;
+      return;
+    }
+    majorsTbody.innerHTML = majors
+      .map((m) => {
+        const facName = (m.faculty && m.faculty.name) || "-";
+        return `<tr>
+        <td>${escapeHtml(m.title || "-")}</td>
+        <td>${escapeHtml(m.code || "-")}</td>
+        <td>${formatDateISO(m.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            m._id || m.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            m._id || m.id || ""
+          }" style="margin-left:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    majorsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت رشته‌ها</td></tr>`;
+  }
+}
+
 async function loadFaculties() {
   facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
   try {
@@ -284,6 +340,84 @@ async function loadFaculties() {
   } catch (err) {
     console.error(err);
     facultiesTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت دانشکده‌ها</td></tr>`;
+  }
+}
+
+/* delegates for edit/delete MAJOR */
+majorsTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openMajorEdit(id);
+  if (action === "delete") confirmMajorDelete(id);
+});
+
+/* open add major modal */
+$("#openAddMajor")?.addEventListener("click", () => {
+  currentMajorEditId = null;
+  $("#majorModalTitle").textContent = "ایجاد رشته";
+  $("#majName").value = "";
+  $("#majCode").value = "";
+  openModal("majorModal");
+});
+
+/* save major */
+$("#saveMajor")?.addEventListener("click", async () => {
+  const title = $("#majName").value.trim();
+  const code = $("#majCode").value.trim();
+  if (!title || !code) {
+    alert("نام و کد رشته را وارد کنید");
+    return;
+  }
+  try {
+    if (currentMajorEditId) {
+      await apiFetch(
+        ENDPOINTS.MAJOR + "/" + encodeURIComponent(currentMajorEditId),
+        {
+          method: "PUT",
+          body: { title, code },
+        }
+      );
+    } else {
+      await apiFetch(ENDPOINTS.MAJOR, {
+        method: "POST",
+        body: { title, code },
+      });
+    }
+    closeModal("majorModal");
+    await loadMajors();
+    await loadOverview();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در ذخیره رشته");
+  }
+});
+
+async function openMajorEdit(id) {
+  try {
+    const data = await apiFetch(ENDPOINTS.MAJOR + "/" + encodeURIComponent(id));
+    currentMajorEditId = id;
+    $("#majorModalTitle").textContent = "ویرایش رشته";
+    $("#majName").value = data.title || "";
+    $("#majCode").value = data.code || "";
+    openModal("majorModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت رشته");
+  }
+}
+
+async function confirmMajorDelete(id) {
+  try {
+    await apiFetch(ENDPOINTS.MAJOR + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    closeModal("confirmModal");
+    await loadMajors();
+    await loadOverview();
+  } catch (error) {
+    alert("خطا در دریافت رشته");
   }
 }
 
@@ -371,7 +505,7 @@ lessonsTbody.addEventListener("click", async (e) => {
   const action = btn.dataset.action;
   const id = btn.dataset.id;
   if (action === "edit") openLessonEdit(id);
-  if (action === "delete") confirmDelete(id, ENDPOINTS.LESSON);
+  if (action === "delete") confirmDelete(id);
 });
 
 /* open add lesson modal */
@@ -471,7 +605,7 @@ async function openLessonEdit(id) {
 
 /* delete flow */
 let deleteTargetId = null;
-function confirmDelete(id, deleteBaseUrl) {
+function confirmDelete(id) {
   deleteTargetId = id;
   $("#confirmText").textContent =
     "آیا می‌خواهید این درس را حذف کنید؟ این عمل برگشت‌پذیر نیست.";
@@ -497,7 +631,10 @@ $("#cancelConfirm").addEventListener("click", () => {
   deleteTargetId = null;
 });
 
-function openModal(id) {
+let deleteBaseUrl = "";
+/* ========== Modal helpers ========== */
+function openModal(id, url) {
+  deleteBaseUrl = url;
   $("#overlay").classList.remove("hidden");
   $("#" + id).classList.remove("hidden");
   $("#overlay").setAttribute("aria-hidden", "false");
@@ -509,63 +646,12 @@ function closeModal(id) {
 }
 $("#closeLesson").addEventListener("click", () => closeModal("lessonModal"));
 $("#closeFaculty")?.addEventListener("click", () => closeModal("facultyModal"));
+$("#closeMajor")?.addEventListener("click", () => closeModal("majorModal"));
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
   closeModal("facultyModal");
   closeModal("confirmModal");
 });
-
-async function loadStudentsForCreditLimit() {
-  const select = document.getElementById('studentSelect');
-
-  const res = await fetch(API_BASE + 'student', {
-    headers: {
-      Authorization: 'Bearer ' + localStorage.getItem('accessToken')
-    }
-  });
-
-  const students = await res.json();
-
-  select.innerHTML = '<option value="">انتخاب دانشجو</option>';
-
-  students.forEach(s => {
-    const opt = document.createElement('option');
-    opt.value = s.id || s._id;
-    opt.textContent = s.name || s.fullName;
-    select.appendChild(opt);
-  });
-}
-
-document
-  .getElementById('saveCreditLimitBtn')
-  .addEventListener('click', saveCreditLimit);
-
-async function saveCreditLimit() {
-  const studentId = document.getElementById('studentSelect').value;
-  const min = document.getElementById('minUnits').value;
-  const max = document.getElementById('maxUnits').value;
-  const msg = document.getElementById('creditLimitMsg');
-
-  if (!studentId || min === '' || max === '') {
-    msg.textContent = 'همه فیلدها الزامی است';
-    return;
-  }
-
-  await fetch(API_BASE + 'student/credit-limit', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: 'Bearer ' + localStorage.getItem('accessToken')
-    },
-    body: JSON.stringify({
-      studentId,
-      minUnits: Number(min),
-      maxUnits: Number(max)
-    })
-  });
-
-  msg.textContent = 'ذخیره شد';
-}
 
 /* ========== Create User (dynamic form) ========== */
 function activateStep(step) {
@@ -575,6 +661,7 @@ function activateStep(step) {
 
   document.getElementById(`step${step}`).classList.remove("hidden");
 
+  // Update step indicators
   [1, 2, 3].forEach((n) => {
     document.getElementById(`stepDot${n}`).classList.remove("active-step");
   });
@@ -667,6 +754,7 @@ $("#createUserBtn").addEventListener("click", async () => {
     alert("کاربر با موفقیت ایجاد شد!");
     activateStep(1);
 
+    // reset form:
     $("#uFirst").value = "";
     $("#uLast").value = "";
     $("#uUsername").value = "";
@@ -690,6 +778,7 @@ async function loadProfile() {
   const tok = getToken();
   if (!tok) return;
   try {
+    // attempt decode token payload to get name/role
     const payload = JSON.parse(
       atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
     );
@@ -752,12 +841,15 @@ function loadAdminHeader() {
   }
 }
 
+/* ========== init ========= */
 (function init() {
   loadAdminHeader();
+  // default panel
   setActivePanel("overview");
+  // load initial overview
   loadOverview();
   // render initial user form default STUDENT
   renderUserForm("STUDENT");
+  // load profile from token if exists
   loadProfile();
-  loadStudentsForCreditLimit();
 })();
