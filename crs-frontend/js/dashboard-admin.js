@@ -9,7 +9,6 @@ const ENDPOINTS = {
   REFRESH: "/refresh",
 };
 
-/* ================== Helpers ================== */
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 const escapeHtml = (s) =>
@@ -27,7 +26,6 @@ const escapeHtml = (s) =>
           }[c])
       );
 
-/* format date => YYYY-MM-DD | HH:MM (local) */
 function formatDateISO(v) {
   if (!v) return "";
   const d = new Date(v);
@@ -40,7 +38,6 @@ function formatDateISO(v) {
   return `${yyyy}-${mm}-${dd} | ${hh}:${mi}`;
 }
 
-/* token helpers */
 function getToken() {
   return (
     localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
@@ -55,7 +52,6 @@ function removeToken() {
   sessionStorage.removeItem("accessToken");
 }
 
-/* fetch wrapper */
 async function apiFetch(
   path,
   { method = "GET", body = null, auth = true } = {}
@@ -81,16 +77,13 @@ async function apiFetch(
   return data;
 }
 
-/* ========== UI Boot & Navigation ========== */
 function setActivePanel(name) {
-  // menu
   $$(".menu-item").forEach((btn) => {
     btn.classList.toggle(
       "active",
       btn.dataset.panel === name || btn.dataset.section === name
     );
   });
-  // title
   $("#pageTitle").textContent =
     {
       overview: "نمای کلی",
@@ -98,7 +91,6 @@ function setActivePanel(name) {
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
-  // panels
   [
     "panel-overview",
     "panel-lessons",
@@ -114,7 +106,6 @@ function setActivePanel(name) {
         ? "block"
         : "none";
   });
-  // special: map names:
   if (name === "create-user")
     document.getElementById("panel-create-user").style.display = "block";
   if (name === "overview") {
@@ -128,14 +119,13 @@ function setActivePanel(name) {
   }
 }
 
-/* hook menu */
 $$(".menu-item").forEach((btn) => {
   btn.addEventListener("click", (e) => {
     const panel = btn.dataset.panel || btn.dataset.section;
-    // clear active on others
+
     $$(".menu-item").forEach((x) => x.classList.remove("active"));
     btn.classList.add("active");
-    // show section
+
     if (panel === "create-user") {
       setActivePanel("create-user");
       renderUserForm("STUDENT"); // default
@@ -148,13 +138,11 @@ $$(".menu-item").forEach((btn) => {
   });
 });
 
-/* mobile sidebar toggle */
 $("#mobileToggle").addEventListener("click", () => {
   const sb = $("#sidebar");
   sb.classList.toggle("open");
 });
 
-/* close sidebar on outside click (mobile) */
 document.addEventListener("click", (e) => {
   if (window.innerWidth < 1000) {
     if (!e.target.closest("#sidebar") && !e.target.closest("#mobileToggle"))
@@ -162,13 +150,11 @@ document.addEventListener("click", (e) => {
   }
 });
 
-/* logout */
 $("#btnLogout").addEventListener("click", () => {
   removeToken();
   window.location.href = "index.html";
 });
 
-/* ========== Overview ========== */
 async function loadOverview() {
   $("#statLessons").textContent = "...";
   $("#activityList").innerHTML = '<div class="muted">در حال بارگذاری...</div>';
@@ -259,7 +245,6 @@ async function loadLessons() {
   }
 }
 
-/* delegates for edit/delete */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
   if (!btn) return;
@@ -393,7 +378,6 @@ $("#cancelConfirm").addEventListener("click", () => {
   deleteTargetId = null;
 });
 
-/* ========== Modal helpers ========== */
 function openModal(id) {
   $("#overlay").classList.remove("hidden");
   $("#" + id).classList.remove("hidden");
@@ -410,6 +394,58 @@ $("#overlay").addEventListener("click", () => {
   closeModal("confirmModal");
 });
 
+async function loadStudentsForCreditLimit() {
+  const select = document.getElementById('studentSelect');
+
+  const res = await fetch(API_BASE + 'student', {
+    headers: {
+      Authorization: 'Bearer ' + localStorage.getItem('accessToken')
+    }
+  });
+
+  const students = await res.json();
+
+  select.innerHTML = '<option value="">انتخاب دانشجو</option>';
+
+  students.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.id || s._id;
+    opt.textContent = s.name || s.fullName;
+    select.appendChild(opt);
+  });
+}
+
+document
+  .getElementById('saveCreditLimitBtn')
+  .addEventListener('click', saveCreditLimit);
+
+async function saveCreditLimit() {
+  const studentId = document.getElementById('studentSelect').value;
+  const min = document.getElementById('minUnits').value;
+  const max = document.getElementById('maxUnits').value;
+  const msg = document.getElementById('creditLimitMsg');
+
+  if (!studentId || min === '' || max === '') {
+    msg.textContent = 'همه فیلدها الزامی است';
+    return;
+  }
+
+  await fetch(API_BASE + 'student/credit-limit', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + localStorage.getItem('accessToken')
+    },
+    body: JSON.stringify({
+      studentId,
+      minUnits: Number(min),
+      maxUnits: Number(max)
+    })
+  });
+
+  msg.textContent = 'ذخیره شد';
+}
+
 /* ========== Create User (dynamic form) ========== */
 function activateStep(step) {
   ["step1", "step2", "step3"].forEach((id) => {
@@ -418,7 +454,6 @@ function activateStep(step) {
 
   document.getElementById(`step${step}`).classList.remove("hidden");
 
-  // Update step indicators
   [1, 2, 3].forEach((n) => {
     document.getElementById(`stepDot${n}`).classList.remove("active-step");
   });
@@ -511,7 +546,6 @@ $("#createUserBtn").addEventListener("click", async () => {
     alert("کاربر با موفقیت ایجاد شد!");
     activateStep(1);
 
-    // reset form:
     $("#uFirst").value = "";
     $("#uLast").value = "";
     $("#uUsername").value = "";
@@ -535,7 +569,6 @@ async function loadProfile() {
   const tok = getToken();
   if (!tok) return;
   try {
-    // attempt decode token payload to get name/role
     const payload = JSON.parse(
       atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
     );
@@ -598,15 +631,12 @@ function loadAdminHeader() {
   }
 }
 
-/* ========== init ========= */
 (function init() {
   loadAdminHeader();
-  // default panel
   setActivePanel("overview");
-  // load initial overview
   loadOverview();
   // render initial user form default STUDENT
   renderUserForm("STUDENT");
-  // load profile from token if exists
   loadProfile();
+  loadStudentsForCreditLimit();
 })();
