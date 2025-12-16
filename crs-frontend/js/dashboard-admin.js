@@ -1563,7 +1563,38 @@ $("#roleSelect").addEventListener("change", () => {
   if (role === "STUDENT") {
     populateMajorSelect();
   }
+  if (role === "PROFESSOR") {
+    populateProfessorCreateFacultySelect();
+  }
 });
+
+async function populateProfessorCreateFacultySelect() {
+  const sel = $("#uFaculty");
+  if (!sel) return;
+  sel.innerHTML =
+    '<option value="" disabled selected>در حال بارگذاری دانشکده‌ها…</option>';
+  try {
+    const faculties = await apiFetch(ENDPOINTS.FACULTY);
+    if (!Array.isArray(faculties) || faculties.length === 0) {
+      sel.innerHTML =
+        '<option value="" disabled>هیچ دانشکده‌ای یافت نشد</option>';
+      return;
+    }
+    sel.innerHTML =
+      '<option value="" disabled selected>انتخاب دانشکده…</option>' +
+      faculties
+        .map((f) => {
+          const id = f._id || f.id;
+          const name = f.name || f.title || "دانشکده بدون نام";
+          return `<option value="${id}">${escapeHtml(name)}</option>`;
+        })
+        .join("");
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML =
+      '<option value="" disabled>خطا در دریافت دانشکده‌ها</option>';
+  }
+}
 
 async function populateMajorSelect() {
   console.log();
@@ -1637,8 +1668,12 @@ $("#createUserBtn").addEventListener("click", async () => {
   };
 
   if (role === "PROFESSOR") {
-    body.faculty = $("#uFaculty")?.value?.trim() || "";
+    body.faculty = $("#uFaculty")?.value || "";
     body.education = $("#uEducation")?.value?.trim() || "";
+    if (!body.faculty) {
+      alert("لطفاً دانشکده را انتخاب کنید.");
+      return;
+    }
   }
   if (role === "STUDENT") {
     body.majorCode = $("#uMajor")?.value || "";
