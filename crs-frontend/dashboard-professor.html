@@ -1,17 +1,243 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
-<head>
+  <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>داشبورد استاد — سامانه انتخاب واحد</title>
     <link rel="stylesheet" href="css/dashboard-admin.css" />
-</head>
-<body>
-    <div class="dashboard">
-        <h1>این صفحه داشبورد استاد است.</h1>
-        <h3>در حال بروزرسانی...</h3>
+  </head>
+  <body>
+    <div id="app" class="app-root">
+      <!-- SIDEBAR -->
+      <aside class="sidebar" id="sidebar" aria-label="منوی اصلی">
+        <div class="brand">
+          <div class="logo">
+            <img
+              src="images/logo.jpg"
+              alt="University Logo"
+              style="width: 100%; height: 100%; border-radius: 12px"
+            />
+          </div>
+          <div class="brand-txt">
+            <div class="title">سامانه انتخاب واحد</div>
+            <div class="subtitle muted">پنل استاد</div>
+          </div>
+        </div>
+
+        <nav class="menu" role="navigation" aria-label="ناوبری اصلی">
+          <button
+            class="menu-item active"
+            data-panel="section"
+            aria-pressed="true"
+          >
+            📅 سکشن‌های من
+          </button>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="muted small">نسخه 1.0</div>
+          <div class="muted small">© دانشگاه</div>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <div class="main-area">
+        <!-- header -->
+        <header class="topbar" role="banner">
+          <div class="left">
+            <button id="mobileToggle" class="icon-btn" aria-label="نمایش منو">
+              ☰
+            </button>
+            <h1 id="pageTitle" class="page-title">سکشن‌های من</h1>
+          </div>
+
+          <div class="right">
+            <div class="user-pill" id="userPill" aria-hidden="false">
+              <div class="avatar" id="avatar"></div>
+              <div class="user-info">
+                <div id="userName">استاد</div>
+                <div class="muted small" id="userRole">PROFESSOR</div>
+              </div>
+            </div>
+            <button id="btnLogout" class="btn ghost">خروج</button>
+          </div>
+        </header>
+
+        <!-- content -->
+        <main class="content" id="content" role="main">
+          <!-- PANEL: SECTION (read-only) -->
+          <section
+            id="panel-section"
+            class="panel panel--active"
+            aria-labelledby="pageTitle"
+          >
+            <div class="panel-header">
+              <h2>سکشن‌های من</h2>
+              <div class="panel-actions">
+                <input
+                  id="secSearchProf"
+                  type="text"
+                  class="search-input"
+                  placeholder="جستجو بر اساس درس، کلاس یا روز..."
+                  style="max-width: 260px"
+                />
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="sectionsTable"
+                role="table"
+                aria-label="لیست سکشن‌ها"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">درس</th>
+                    <th scope="col">کلاس</th>
+                    <th scope="col">ظرفیت</th>
+                    <th scope="col">تعداد دانشجو</th>
+                    <th scope="col">زمان‌بندی</th>
+                  </tr>
+                </thead>
+                <tbody id="sectionsTbody">
+                  <tr>
+                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </main>
+      </div>
     </div>
 
     <script src="js/api.js"></script>
-</body>
+    <script>
+      const dayNamesFa = {
+        MONDAY: "دوشنبه",
+        TUESDAY: "سه\u200cشنبه",
+        WEDNESDAY: "چهارشنبه",
+        THURSDAY: "پنجشنبه",
+        FRIDAY: "جمعه",
+        SATURDAY: "شنبه",
+        SUNDAY: "یکشنبه",
+      };
+
+      const sectionsTbody = document.getElementById("sectionsTbody");
+
+      function getToken() {
+        return (
+          localStorage.getItem("accessToken") ||
+          sessionStorage.getItem("accessToken")
+        );
+      }
+
+      function decodeTokenPayload() {
+        const tok = getToken();
+        if (!tok) return null;
+        try {
+          const payload = JSON.parse(
+            atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+          );
+          return payload;
+        } catch (e) {
+          console.warn("token decode failed", e);
+          return null;
+        }
+      }
+
+      function loadProfessorHeader() {
+        const payload = decodeTokenPayload();
+        if (!payload) return;
+        const name = payload.firstName
+          ? payload.firstName + (payload.lastName ? " " + payload.lastName : "")
+          : payload.username || "استاد";
+        document.getElementById("userName").textContent = name;
+        document.getElementById("userRole").textContent =
+          payload.role || "PROFESSOR";
+        const avatar = document.getElementById("avatar");
+        avatar.textContent = (name[0] || "P").toUpperCase();
+      }
+
+      async function loadSectionsForProfessor() {
+        sectionsTbody.innerHTML =
+          '<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>';
+        try {
+          const data = await apiFetch("/section", { method: "GET" });
+          const sections = Array.isArray(data) ? data : [];
+          if (!sections.length) {
+            sectionsTbody.innerHTML =
+              '<tr><td colspan="5" class="muted">هیچ سکشنی یافت نشد</td></tr>';
+            return;
+          }
+
+          // اگر backend خودش فیلتر بر اساس استاد انجام نمی\u200cدهد،
+          // می\u200cتوانید در اینجا براساس payload پروفسور فیلتر کنید.
+
+          sectionsTbody.innerHTML = sections
+            .map((s) => {
+              const lessonTitle = (s.lesson && s.lesson.title) || "-";
+              const classroomLabel =
+                (s.classroom && s.classroom.room_number) || "-";
+              const capacity = s.capacity ?? "-";
+              const studentsCount = Array.isArray(s.students)
+                ? s.students.length
+                : 0;
+              const schedulesText = Array.isArray(s.schedules)
+                ? s.schedules
+                    .map((sch) => {
+                      const dow = sch.day_of_week || "";
+                      const st = sch.start_time || "";
+                      const et = sch.endTime || "";
+                      if (!dow && !st && !et) return "";
+                      const faDay = dayNamesFa[dow] || dow;
+                      return `${faDay} ${st}-${et}`.trim();
+                    })
+                    .filter(Boolean)
+                    .join("<br>")
+                : "";
+
+              return `<tr>
+                <td>${lessonTitle}</td>
+                <td>${classroomLabel}</td>
+                <td>${capacity}</td>
+                <td>${studentsCount}</td>
+                <td>${schedulesText || "-"}</td>
+              </tr>`;
+            })
+            .join("");
+        } catch (err) {
+          console.error(err);
+          sectionsTbody.innerHTML =
+            '<tr><td colspan="5" class="muted">خطا در دریافت سکشن\u200cها</td></tr>';
+        }
+      }
+
+      document.getElementById("mobileToggle").addEventListener("click", () => {
+        const sb = document.getElementById("sidebar");
+        sb.classList.toggle("open");
+      });
+
+      document.addEventListener("click", (e) => {
+        if (window.innerWidth < 1000) {
+          if (
+            !e.target.closest("#sidebar") &&
+            !e.target.closest("#mobileToggle")
+          )
+            document.getElementById("sidebar").classList.remove("open");
+        }
+      });
+
+      document.getElementById("btnLogout").addEventListener("click", () => {
+        localStorage.removeItem("accessToken");
+        sessionStorage.removeItem("accessToken");
+        window.location.href = "index.html";
+      });
+
+      (function init() {
+        loadProfessorHeader();
+        loadSectionsForProfessor();
+      })();
+    </script>
+  </body>
 </html>
