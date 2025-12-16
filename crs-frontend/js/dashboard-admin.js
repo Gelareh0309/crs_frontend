@@ -4,6 +4,7 @@ const ENDPOINTS = {
   FACULTY: "/faculty",
   MAJOR: "/major",
   CLASSROOM: "/classroom",
+  SECTION: "/section",
   CREATE_STUDENT: "/student",
   CREATE_PROFESSOR: "/professor",
   CREATE_ADMIN: "/admin",
@@ -100,6 +101,7 @@ function setActivePanel(name) {
 
       lessons: "مدیریت دروس",
       faculty: "مدیریت دانشکده‌ها",
+      section: "مدیریت سکشن‌ها",
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
@@ -110,6 +112,7 @@ function setActivePanel(name) {
     "panel-faculty",
     "panel-major",
     "panel-classroom",
+    "panel-section",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -141,6 +144,9 @@ function setActivePanel(name) {
   if (name === "major") {
     document.getElementById("panel-major").style.display = "block";
   }
+  if (name === "section") {
+    document.getElementById("panel-section").style.display = "block";
+  }
 }
 
 /* hook menu */
@@ -160,6 +166,7 @@ $$(".menu-item").forEach((btn) => {
       if (panel === "faculty") loadFaculties();
       if (panel === "major") loadMajors();
       if (panel === "classroom") loadClassrooms();
+      if (panel === "section") loadSections();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
@@ -289,6 +296,21 @@ let currentMajorEditId = null;
 const classroomsTbody = $("#classroomsTbody");
 let currentClassroomEditId = null;
 
+/* sections table */
+const sectionsTbody = $("#sectionsTbody");
+let currentSectionEditId = null;
+
+/* day-of-week mapping (EN -> FA) */
+const dayNamesFa = {
+  MONDAY: "دوشنبه",
+  TUESDAY: "سه‌شنبه",
+  WEDNESDAY: "چهارشنبه",
+  THURSDAY: "پنجشنبه",
+  FRIDAY: "جمعه",
+  SATURDAY: "شنبه",
+  SUNDAY: "یکشنبه",
+};
+
 async function loadMajors() {
   majorsTbody.innerHTML = `<tr><td colspan="5" class="muted">در حال بارگذاری...</td></tr>`;
   try {
@@ -382,6 +404,70 @@ async function loadClassrooms() {
   } catch (err) {
     console.error(err);
     classroomsTbody.innerHTML = `<tr><td colspan="5" class="muted">خطا در دریافت کلاس‌ها</td></tr>`;
+  }
+}
+async function searchSection() {
+  const search = document.getElementById("secSearch").value;
+  loadSections(search);
+}
+async function loadSections(search = "") {
+  sectionsTbody.innerHTML = `<tr><td colspan="7" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const sections = await apiFetch(`${ENDPOINTS.SECTION}?search=${search}`, {
+      method: "GET",
+    });
+    if (!Array.isArray(sections) || sections.length === 0) {
+      sectionsTbody.innerHTML = `<tr><td colspan="7" class="muted">هیچ سکشنی یافت نشد</td></tr>`;
+      return;
+    }
+    sectionsTbody.innerHTML = sections
+      .map((s) => {
+        const lessonTitle = (s.lesson && s.lesson.title) || "-";
+        const profName =
+          (s.professorUser &&
+            (
+              (s.professorUser.firstName || "") +
+              " " +
+              (s.professorUser.lastName || "")
+            ).trim()) ||
+          (s.professorUser && s.professorUser.username) ||
+          "-";
+        const classroomLabel = (s.classroom && s.classroom.room_number) || "-";
+        const capacity = s.capacity ?? "-";
+        const schedulesText = Array.isArray(s.schedules)
+          ? s.schedules
+              .map((sch) => {
+                const dow = sch.day_of_week || "";
+                const st = sch.start_time || "";
+                const et = sch.endTime || "";
+                if (!dow && !st && !et) return "";
+                const faDay = dayNamesFa[dow] || dow;
+                return `${faDay} ${st}-${et}`.trim();
+              })
+              .filter(Boolean)
+              .join("<br>")
+          : "";
+        return `<tr>
+        <td>${escapeHtml(lessonTitle)}</td>
+        <td>${escapeHtml(profName)}</td>
+        <td>${escapeHtml(classroomLabel)}</td>
+        <td>${escapeHtml(String(capacity))}</td>
+        <td>${schedulesText || "-"}</td>
+        <td>${formatDateISO(s.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            s._id || s.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            s._id || s.id || ""
+          }" style="margin-left:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    sectionsTbody.innerHTML = `<tr><td colspan="7" class="muted">خطا در دریافت سکشن‌ها</td></tr>`;
   }
 }
 
@@ -664,6 +750,289 @@ async function confirmClassroomDelete(id) {
   }
 }
 
+/* delegates for edit/delete SECTION */
+sectionsTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openSectionEdit(id);
+  if (action === "delete") confirmSectionDelete(id);
+});
+
+/* open add section modal */
+$("#openAddSection")?.addEventListener("click", async () => {
+  currentSectionEditId = null;
+  $("#sectionModalTitle").textContent = "ایجاد سکشن";
+  $("#secCapacity").value = 1;
+  clearScheduleRows();
+  addScheduleRow();
+  await populateSectionSelects();
+  openModal("sectionModal");
+});
+
+$("#refreshSections")?.addEventListener("click", () => {
+  loadSections();
+});
+
+async function populateSectionSelects(
+  selectedProfessorId = "",
+  selectedClassroomId = "",
+  selectedLessonId = ""
+) {
+  const profSel = $("#secProfessor");
+  const classSel = $("#secClassroom");
+  const lessonSel = $("#secLesson");
+  if (!profSel || !classSel || !lessonSel) return;
+
+  profSel.innerHTML = "<option disabled>در حال بارگذاری استادان…</option>";
+  classSel.innerHTML = "<option disabled>در حال بارگذاری کلاس‌ها…</option>";
+  lessonSel.innerHTML = "<option disabled>در حال بارگذاری دروس…</option>";
+
+  try {
+    const [professors, classrooms, lessons] = await Promise.all([
+      apiFetch(ENDPOINTS.CREATE_PROFESSOR),
+      apiFetch(ENDPOINTS.CLASSROOM),
+      apiFetch(ENDPOINTS.LESSON),
+    ]);
+
+    // professors
+    if (Array.isArray(professors) && professors.length) {
+      profSel.innerHTML = professors
+        .map((p) => {
+          const user = p.user || p.professorUser || {};
+          const fullName = (
+            (user.firstName || "") +
+            " " +
+            (user.lastName || "")
+          ).trim();
+          const label = fullName || user.username || "استاد بدون نام";
+          const id = p._id || p.id;
+          return `<option value="${id}" ${
+            selectedProfessorId && selectedProfessorId === id ? "selected" : ""
+          }>${escapeHtml(label)}</option>`;
+        })
+        .join("");
+    } else {
+      profSel.innerHTML = "<option disabled>استادی یافت نشد</option>";
+    }
+
+    // classrooms
+    if (Array.isArray(classrooms) && classrooms.length) {
+      classSel.innerHTML = classrooms
+        .map((c) => {
+          const label = c.room_number || c.roomNumber || "کلاس بدون شماره";
+          const id = c._id || c.id;
+          return `<option value="${id}" ${
+            selectedClassroomId && selectedClassroomId === id ? "selected" : ""
+          }>${escapeHtml(label)}</option>`;
+        })
+        .join("");
+    } else {
+      classSel.innerHTML = "<option disabled>کلاسی یافت نشد</option>";
+    }
+
+    // lessons
+    if (Array.isArray(lessons) && lessons.length) {
+      lessonSel.innerHTML = lessons
+        .map((l) => {
+          const label = l.title || l.lessonId || "درس بدون عنوان";
+          const id = l._id || l.id;
+          return `<option value="${id}" ${
+            selectedLessonId && selectedLessonId === id ? "selected" : ""
+          }>${escapeHtml(label)}</option>`;
+        })
+        .join("");
+    } else {
+      lessonSel.innerHTML = "<option disabled>درسی یافت نشد</option>";
+    }
+  } catch (e) {
+    console.error(e);
+    profSel.innerHTML = "<option disabled>خطا در دریافت استادان</option>";
+    classSel.innerHTML = "<option disabled>خطا در دریافت کلاس‌ها</option>";
+    lessonSel.innerHTML = "<option disabled>خطا در دریافت دروس</option>";
+  }
+}
+
+/* schedules UI helpers */
+const daysOfWeek = [
+  "MONDAY",
+  "TUESDAY",
+  "WEDNESDAY",
+  "THURSDAY",
+  "FRIDAY",
+  "SATURDAY",
+  "SUNDAY",
+];
+
+function clearScheduleRows() {
+  const container = $("#secSchedulesContainer");
+  if (!container) return;
+  container.innerHTML = "";
+}
+
+function addScheduleRow(day = "MONDAY", start = "", end = "") {
+  const container = $("#secSchedulesContainer");
+  if (!container) return;
+  const row = document.createElement("div");
+  row.className = "schedule-row";
+  row.innerHTML = `
+    <select class="schedule-day">
+      ${daysOfWeek
+        .map((d) => {
+          const faLabel = dayNamesFa[d] || d;
+          return `<option value="${d}" ${
+            d === day ? "selected" : ""
+          }>${faLabel}</option>`;
+        })
+        .join("")}
+    </select>
+    <input type="time" class="schedule-start" value="${start || ""}" />
+    <input type="time" class="schedule-end" value="${end || ""}" />
+    <button type="button" class="btn ghost schedule-remove">✕</button>
+  `;
+  container.appendChild(row);
+}
+
+$("#addScheduleRow")?.addEventListener("click", () => {
+  addScheduleRow();
+});
+
+document
+  .getElementById("secSchedulesContainer")
+  ?.addEventListener("click", (e) => {
+    const btn = e.target.closest(".schedule-remove");
+    if (!btn) return;
+    const row = btn.closest(".schedule-row");
+    if (row) row.remove();
+  });
+
+/* save section */
+$("#saveSection")?.addEventListener("click", async () => {
+  const professorId = $("#secProfessor")?.value || "";
+  const classroomId = $("#secClassroom")?.value || "";
+  const lessonId = $("#secLesson")?.value || "";
+  const capacityRaw = $("#secCapacity")?.value || "";
+
+  if (!professorId || !classroomId || !lessonId || !capacityRaw) {
+    alert("استاد، کلاس، درس و ظرفیت را کامل وارد کنید");
+    return;
+  }
+
+  const capacity = Number(capacityRaw) || 0;
+  const container = $("#secSchedulesContainer");
+  const schedules = [];
+  if (container) {
+    container.querySelectorAll(".schedule-row").forEach((row) => {
+      const day = row.querySelector(".schedule-day")?.value || "";
+      const st = row.querySelector(".schedule-start")?.value || "";
+      const et = row.querySelector(".schedule-end")?.value || "";
+      if (day && st && et) {
+        schedules.push({
+          day_of_week: day,
+          start_time: st,
+          endTime: et,
+        });
+      }
+    });
+  }
+
+  if (!schedules.length) {
+    alert("حداقل یک زمان‌بندی معتبر وارد کنید");
+    return;
+  }
+
+  const body = {
+    professor: professorId,
+    classroom: classroomId,
+    lesson: lessonId,
+    capacity,
+    schedules,
+  };
+
+  try {
+    if (currentSectionEditId) {
+      await apiFetch(
+        ENDPOINTS.SECTION + "/" + encodeURIComponent(currentSectionEditId),
+        {
+          method: "PUT",
+          body,
+        }
+      );
+    } else {
+      await apiFetch(ENDPOINTS.SECTION, {
+        method: "POST",
+        body,
+      });
+    }
+    closeModal("sectionModal");
+    await loadSections();
+    await loadOverview();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در ذخیره سکشن");
+  }
+});
+
+async function openSectionEdit(id) {
+  try {
+    const data = await apiFetch(
+      ENDPOINTS.SECTION + "/" + encodeURIComponent(id)
+    );
+    currentSectionEditId = id;
+    $("#sectionModalTitle").textContent = "ویرایش سکشن";
+    $("#secCapacity").value = data.capacity || 1;
+
+    // populate selects with current selections
+    const professorId =
+      (data.professor && (data.professor._id || data.professor.id)) ||
+      data.professorId ||
+      "";
+    const classroomId =
+      (data.classroom && (data.classroom._id || data.classroom.id)) ||
+      data.classroomId ||
+      "";
+    const lessonId =
+      (data.lesson && (data.lesson._id || data.lesson.id)) ||
+      data.lessonId ||
+      "";
+
+    await populateSectionSelects(professorId, classroomId, lessonId);
+
+    clearScheduleRows();
+    if (Array.isArray(data.schedules) && data.schedules.length) {
+      data.schedules.forEach((sch) => {
+        addScheduleRow(
+          sch.day_of_week || "MONDAY",
+          sch.start_time || "",
+          sch.endTime || ""
+        );
+      });
+    } else {
+      addScheduleRow();
+    }
+
+    openModal("sectionModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت سکشن");
+  }
+}
+
+async function confirmSectionDelete(id) {
+  try {
+    await apiFetch(ENDPOINTS.SECTION + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    closeModal("confirmModal");
+    await loadSections();
+    await loadOverview();
+  } catch (error) {
+    console.error(error);
+    alert("خطا در حذف سکشن");
+  }
+}
+
 /* delegates for edit/delete LESSON */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
@@ -816,10 +1185,12 @@ $("#closeMajor")?.addEventListener("click", () => closeModal("majorModal"));
 $("#closeClassroom")?.addEventListener("click", () =>
   closeModal("classroomModal")
 );
+$("#closeSection")?.addEventListener("click", () => closeModal("sectionModal"));
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
   closeModal("facultyModal");
   closeModal("classroomModal");
+  closeModal("sectionModal");
   closeModal("confirmModal");
 });
 

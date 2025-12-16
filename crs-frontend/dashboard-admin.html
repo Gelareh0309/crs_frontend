@@ -41,6 +41,9 @@
           <button class="menu-item" data-panel="classroom">
             🏫 مدیریت کلاس‌ها
           </button>
+          <button class="menu-item" data-panel="section">
+            📅 مدیریت سکشن‌ها
+          </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
@@ -178,6 +181,52 @@
                 <tbody id="classroomsTbody">
                   <tr>
                     <td colspan="5" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: SECTION -->
+          <section id="panel-section" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت سکشن‌ها</h2>
+              <div class="panel-actions">
+                <input
+                  id="secSearch"
+                  type="text"
+                  class="search-input"
+                  placeholder="جستجو بر اساس استاد، درس یا کلاس..."
+                  style="max-width: 260px"
+                  onkeyup="searchSection()"
+                />
+                <button id="refreshSections" class="btn ghost">رفرش</button>
+                <button id="openAddSection" class="btn primary">
+                  ایجاد سکشن جدید
+                </button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="sectionsTable"
+                role="table"
+                aria-label="لیست سکشن‌ها"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">درس</th>
+                    <th scope="col">استاد</th>
+                    <th scope="col">کلاس</th>
+                    <th scope="col">ظرفیت</th>
+                    <th scope="col">زمان‌بندی</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="sectionsTbody">
+                  <tr>
+                    <td colspan="7" class="muted">در حال بارگذاری...</td>
                   </tr>
                 </tbody>
               </table>
@@ -474,6 +523,44 @@
         <div class="modal-actions">
           <button id="closeClassroom" class="btn ghost">انصراف</button>
           <button id="saveClassroom" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section Modal -->
+    <div
+      id="sectionModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sectionModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="sectionModalTitle">ایجاد سکشن</h3>
+
+        <label>استاد</label>
+        <select id="secProfessor"></select>
+
+        <label>کلاس</label>
+        <select id="secClassroom"></select>
+
+        <label>درس</label>
+        <select id="secLesson"></select>
+
+        <label>ظرفیت</label>
+        <input id="secCapacity" type="number" min="1" value="1" />
+
+        <label>برنامه‌های زمانی</label>
+        <div id="secSchedulesContainer" class="schedules-container">
+          <!-- سطرهای زمان‌بندی به صورت داینامیک اضافه می‌شوند -->
+        </div>
+        <button id="addScheduleRow" class="btn ghost" type="button">
+          افزودن زمان جدید
+        </button>
+
+        <div class="modal-actions" style="margin-top: 16px">
+          <button id="closeSection" class="btn ghost">انصراف</button>
+          <button id="saveSection" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>
