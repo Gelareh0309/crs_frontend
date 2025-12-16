@@ -47,6 +47,9 @@
           <button class="menu-item" data-panel="student">
             👨‍🎓 مدیریت دانشجویان
           </button>
+          <button class="menu-item" data-panel="professor">
+            👨‍🏫 مدیریت اساتید
+          </button>
           <button class="menu-item" data-panel="lessons">📚 مدیریت دروس</button>
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
@@ -265,6 +268,40 @@
                 <tbody id="studentsTbody">
                   <tr>
                     <td colspan="7" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: PROFESSOR -->
+          <section id="panel-professor" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>مدیریت اساتید</h2>
+              <div class="panel-actions">
+                <button id="refreshProfessors" class="btn ghost">رفرش</button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="professorsTable"
+                role="table"
+                aria-label="لیست اساتید"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">کد استاد</th>
+                    <th scope="col">نام</th>
+                    <th scope="col">دانشکده</th>
+                    <th scope="col">تحصیلات</th>
+                    <th scope="col">تاریخ ایجاد</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="professorsTbody">
+                  <tr>
+                    <td colspan="6" class="muted">در حال بارگذاری...</td>
                   </tr>
                 </tbody>
               </table>
@@ -629,6 +666,35 @@
         <div class="modal-actions" style="margin-top: 16px">
           <button id="closeStudent" class="btn ghost">انصراف</button>
           <button id="saveStudent" class="btn primary">ذخیره</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Professor Modal -->
+    <div
+      id="professorModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="professorModalTitle"
+    >
+      <div class="modal-card">
+        <h3 id="professorModalTitle">ویرایش استاد</h3>
+
+        <div class="muted small" style="margin-bottom: 8px">
+          <div>نام: <span id="prFullName"></span></div>
+          <div>کد استاد: <span id="prProfessorId"></span></div>
+        </div>
+
+        <label>دانشکده</label>
+        <select id="prFacultySelect"></select>
+
+        <label>تحصیلات</label>
+        <input id="prEducation" type="text" />
+
+        <div class="modal-actions" style="margin-top: 16px">
+          <button id="closeProfessor" class="btn ghost">انصراف</button>
+          <button id="saveProfessor" class="btn primary">ذخیره</button>
         </div>
       </div>
     </div>

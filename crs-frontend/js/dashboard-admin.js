@@ -103,6 +103,7 @@ function setActivePanel(name) {
       faculty: "مدیریت دانشکده‌ها",
       section: "مدیریت سکشن‌ها",
       student: "مدیریت دانشجویان",
+      professor: "مدیریت اساتید",
       "create-user": "افزودن کاربر",
       profile: "پروفایل",
     }[name] || "داشبورد";
@@ -115,6 +116,7 @@ function setActivePanel(name) {
     "panel-classroom",
     "panel-section",
     "panel-student",
+    "panel-professor",
     "panel-create-user",
     "panel-profile",
   ].forEach((id) => {
@@ -152,6 +154,9 @@ function setActivePanel(name) {
   if (name === "student") {
     document.getElementById("panel-student").style.display = "block";
   }
+  if (name === "professor") {
+    document.getElementById("panel-professor").style.display = "block";
+  }
 }
 
 /* hook menu */
@@ -173,6 +178,7 @@ $$(".menu-item").forEach((btn) => {
       if (panel === "classroom") loadClassrooms();
       if (panel === "section") loadSections();
       if (panel === "student") loadStudents();
+      if (panel === "professor") loadProfessors();
       if (panel === "overview") loadOverview();
       if (panel === "profile") loadProfile();
     }
@@ -309,6 +315,10 @@ let currentSectionEditId = null;
 /* students table */
 const studentsTbody = $("#studentsTbody");
 let currentStudentEditId = null;
+
+/* professors table */
+const professorsTbody = $("#professorsTbody");
+let currentProfessorEditId = null;
 
 /* day-of-week mapping (EN -> FA) */
 const dayNamesFa = {
@@ -1195,6 +1205,166 @@ async function confirmStudentDelete(id) {
   }
 }
 
+/* ========== Professors (list & update) ========== */
+async function loadProfessors() {
+  professorsTbody.innerHTML = `<tr><td colspan="6" class="muted">در حال بارگذاری...</td></tr>`;
+  try {
+    const professors = await apiFetch(ENDPOINTS.CREATE_PROFESSOR);
+    if (!Array.isArray(professors) || professors.length === 0) {
+      professorsTbody.innerHTML = `<tr><td colspan="6" class="muted">هیچ استادی یافت نشد</td></tr>`;
+      return;
+    }
+    professorsTbody.innerHTML = professors
+      .map((p) => {
+        const user = p.user || {};
+        const fullName = (
+          (user.firstName || "") +
+          " " +
+          (user.lastName || "")
+        ).trim();
+        const facultyName =
+          (p.faculty && (p.faculty.name || p.faculty.title)) || "-";
+        const education = p.education || "-";
+        return `<tr>
+        <td>${escapeHtml(p.professorId || user.username || "-")}</td>
+        <td>${escapeHtml(fullName || user.username || "-")}</td>
+        <td>${escapeHtml(facultyName)}</td>
+        <td>${escapeHtml(education)}</td>
+        <td>${formatDateISO(p.createdAt)}</td>
+        <td style="white-space:nowrap">
+          <button class="btn ghost" data-action="edit" data-id="${
+            p._id || p.id || ""
+          }">ویرایش</button>
+          <button class="btn" data-action="delete" data-id="${
+            p._id || p.id || ""
+          }" style="margin-right:8px;background:#ef4444;color:white">حذف</button>
+        </td>
+      </tr>`;
+      })
+      .join("");
+  } catch (err) {
+    console.error(err);
+    professorsTbody.innerHTML = `<tr><td colspan="6" class="muted">خطا در دریافت اساتید</td></tr>`;
+  }
+}
+
+professorsTbody.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action]");
+  if (!btn) return;
+  const action = btn.dataset.action;
+  const id = btn.dataset.id;
+  if (action === "edit") openProfessorEdit(id);
+  if (action === "delete") confirmProfessorDelete(id);
+});
+
+$("#refreshProfessors")?.addEventListener("click", () => {
+  loadProfessors();
+});
+
+async function populateProfessorFacultySelect(selectedId = "") {
+  const sel = $("#prFacultySelect");
+  if (!sel) return;
+  sel.innerHTML = "<option disabled>در حال بارگذاری…</option>";
+  try {
+    const faculties = await apiFetch(ENDPOINTS.FACULTY);
+    if (!Array.isArray(faculties) || faculties.length === 0) {
+      sel.innerHTML = "<option disabled>هیچ دانشکده‌ای یافت نشد</option>";
+      return;
+    }
+    sel.innerHTML = faculties
+      .map((f) => {
+        const id = f._id || f.id;
+        const name = f.name || f.title || "-";
+        return `<option value="${id}" ${
+          selectedId && selectedId === id ? "selected" : ""
+        }>${escapeHtml(name)}</option>`;
+      })
+      .join("");
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML = "<option disabled>خطا در دریافت دانشکده‌ها</option>";
+  }
+}
+
+async function openProfessorEdit(id) {
+  try {
+    const data = await apiFetch(
+      ENDPOINTS.CREATE_PROFESSOR + "/" + encodeURIComponent(id)
+    );
+    currentProfessorEditId = id;
+    $("#professorModalTitle").textContent = "ویرایش استاد";
+
+    const user = data.user || {};
+    const fullName = (
+      (user.firstName || "") +
+      " " +
+      (user.lastName || "")
+    ).trim();
+    $("#prFullName").textContent = fullName || user.username || "-";
+    $("#prProfessorId").textContent = data.professorId || user.username || "-";
+
+    $("#prEducation").value = data.education || "";
+    const facultyId =
+      (data.faculty && (data.faculty._id || data.faculty.id)) ||
+      data.facultyId ||
+      "";
+    await populateProfessorFacultySelect(facultyId);
+
+    openModal("professorModal");
+  } catch (err) {
+    console.error(err);
+    alert("خطا در دریافت اطلاعات استاد");
+  }
+}
+
+$("#saveProfessor")?.addEventListener("click", async () => {
+  if (!currentProfessorEditId) {
+    alert("استاد مشخص نیست");
+    return;
+  }
+  const facultyId = $("#prFacultySelect")?.value || "";
+  const education = $("#prEducation")?.value.trim() || "";
+  if (!facultyId) {
+    alert("دانشکده را انتخاب کنید");
+    return;
+  }
+
+  const body = { faculty: facultyId, education };
+
+  try {
+    await apiFetch(
+      ENDPOINTS.CREATE_PROFESSOR +
+        "/" +
+        encodeURIComponent(currentProfessorEditId),
+      {
+        method: "PUT",
+        body,
+      }
+    );
+    closeModal("professorModal");
+    await loadProfessors();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در به‌روزرسانی استاد");
+  }
+});
+
+async function confirmProfessorDelete(id) {
+  const ok = window.confirm(
+    "آیا از حذف این استاد مطمئن هستید؟ این عمل برگشت‌پذیر نیست."
+  );
+  if (!ok) return;
+  try {
+    await apiFetch(ENDPOINTS.CREATE_PROFESSOR + "/" + encodeURIComponent(id), {
+      method: "DELETE",
+    });
+    await loadProfessors();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در حذف استاد");
+  }
+}
+
 /* delegates for edit/delete LESSON */
 lessonsTbody.addEventListener("click", async (e) => {
   const btn = e.target.closest("button[data-action]");
@@ -1349,12 +1519,16 @@ $("#closeClassroom")?.addEventListener("click", () =>
 );
 $("#closeSection")?.addEventListener("click", () => closeModal("sectionModal"));
 $("#closeStudent")?.addEventListener("click", () => closeModal("studentModal"));
+$("#closeProfessor")?.addEventListener("click", () =>
+  closeModal("professorModal")
+);
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
   closeModal("facultyModal");
   closeModal("classroomModal");
   closeModal("sectionModal");
   closeModal("studentModal");
+  closeModal("professorModal");
   closeModal("confirmModal");
 });
 
