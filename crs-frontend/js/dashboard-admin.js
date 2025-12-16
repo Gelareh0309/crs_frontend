@@ -1,4 +1,3 @@
-/* ================== Config ================== */
 const API_BASE = "http://localhost:3001";
 const ENDPOINTS = {
   LESSON: "/lesson-admin",
@@ -7,7 +6,7 @@ const ENDPOINTS = {
   CREATE_ADMIN: "/admin",
   CHANGE_PASS: "/change-password",
   LOGIN: "/login",
-  REFRESH: "/refresh", // optional
+  REFRESH: "/refresh",
 };
 
 /* ================== Helpers ================== */
@@ -487,7 +486,7 @@ $("#createUserBtn").addEventListener("click", async () => {
     body.education = $("#uEducation")?.value?.trim() || "";
   }
   if (role === "STUDENT") {
-    body.major = $("#uMajor")?.value?.trim() || "";
+    body.majorCode = $("#uMajor")?.value?.trim() || "";
   }
 
   if (!body.password || body.password !== body.confirmPassword) {

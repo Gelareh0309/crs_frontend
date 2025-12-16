@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>داشبورد دانشجو — سامانه انتخاب واحد</title>
+  <link rel="stylesheet" href="css/dashboard-admin.css">
+</head>
+<body>
+  <div id="app" class="app-root">
+
+    <header class="topbar">
+      <div class="left">
+        <h1 class="page-title">داشبورد دانشجو</h1>
+      </div>
+      <div class="right">
+        <div class="user-pill" id="userPill">
+          <div class="avatar" id="avatar"></div>
+          <div class="user-info">
+            <div id="userName">دانشجو</div>
+            <div class="muted small" id="userRole">STUDENT</div>
+          </div>
+        </div>
+        <button id="btnLogout" class="btn ghost">خروج</button>
+      </div>
+    </header>
+
+    <main class="content">
+      <div class="search-bar" style="margin-bottom:16px;">
+        <input id="searchInput" placeholder="جستجو بر اساس نام درس یا استاد" style="width:100%; padding:8px;"/>
+      </div>
+
+      <div class="table-wrap">
+        <table class="table" id="sectionsTable">
+          <thead>
+            <tr>
+              <th>نام درس</th>
+              <th>استاد</th>
+              <th>کلاس</th>
+              <th>واحد</th>
+              <th>زمان‌بندی</th>
+              <th>ظرفیت</th>
+            </tr>
+          </thead>
+          <tbody id="sectionsTbody">
+            <tr><td colspan="6" class="muted">در حال بارگذاری...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/dashboard-student.js"></script>
+</body>
+</html>

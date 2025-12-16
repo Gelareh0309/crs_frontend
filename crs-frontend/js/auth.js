@@ -99,9 +99,9 @@ async function doLogin() {
     if (role) {
       const r = String(role).toLowerCase();
       if (r.includes("admin"))
-        redirect = "/home/matin/Desktop/crs-frontend/dashboard-admin.html";
+        redirect = "/../dashboard-admin.html";
       else if (r.includes("prof") || r.includes("teacher"))
-        redirect = "/../dashboard-prof.html";
+        redirect = "/../dashboard-professor.html";
       else redirect = "/../dashboard-student.html";
     } else {
       redirect = "/../dashboard-student.html";
