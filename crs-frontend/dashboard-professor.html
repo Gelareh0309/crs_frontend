@@ -30,7 +30,10 @@
             data-panel="section"
             aria-pressed="true"
           >
-            📅 تمام سکشن ها
+            📅 تمام سکشن‌ها
+          </button>
+          <button class="menu-item" data-panel="mySections">
+            📚 سکشن‌های من
           </button>
         </nav>
 
@@ -48,7 +51,7 @@
             <button id="mobileToggle" class="icon-btn" aria-label="نمایش منو">
               ☰
             </button>
-            <h1 id="pageTitle" class="page-title">تمام سکشن ها</h1>
+            <h1 id="pageTitle" class="page-title">تمام سکشن‌ها</h1>
           </div>
 
           <div class="right">
@@ -72,7 +75,7 @@
             aria-labelledby="pageTitle"
           >
             <div class="panel-header">
-              <h2>تمام سکشن ها</h2>
+              <h2>تمام سکشن‌ها</h2>
               <div class="panel-actions">
                 <input
                   id="secSearchProf"
@@ -92,22 +95,88 @@
               >
                 <thead>
                   <tr>
-                    <th scope="col">درس</th>
-                    <th scope="col">کلاس</th>
-                    <th scope="col">ظرفیت</th>
-                    <th scope="col">تعداد دانشجو</th>
+                    <th scope="col">کد درس</th>
+                    <th scope="col">نام درس</th>
+                    <th scope="col">استاد</th>
+                    <th scope="col">واحد</th>
                     <th scope="col">زمان‌بندی</th>
+                    <th scope="col">ظرفیت</th>
                   </tr>
                 </thead>
                 <tbody id="sectionsTbody">
                   <tr>
-                    <td colspan="5" class="muted">در حال بارگذاری...</td>
+                    <td colspan="6" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: MY SECTIONS (sections where professor is instructor) -->
+          <section id="panel-mySections" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>سکشن‌های من</h2>
+              <div class="panel-actions">
+                <button id="refreshMySections" class="btn ghost">رفرش</button>
+              </div>
+            </div>
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="mySectionsTable"
+                role="table"
+                aria-label="سکشن‌های من"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">کد درس</th>
+                    <th scope="col">نام درس</th>
+                    <th scope="col">واحد</th>
+                    <th scope="col">کلاس</th>
+                    <th scope="col">زمان‌بندی</th>
+                    <th scope="col">ظرفیت</th>
+                  </tr>
+                </thead>
+                <tbody id="mySectionsTbody">
+                  <tr>
+                    <td colspan="6" class="muted">در حال بارگذاری...</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </section>
         </main>
+      </div>
+    </div>
+
+    <!-- Overlay + Modal: Section students -->
+    <div id="overlay" class="overlay hidden" tabindex="-1" aria-hidden="true"></div>
+    <div
+      id="sectionStudentsModal"
+      class="modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sectionStudentsModalTitle"
+    >
+      <div class="modal-card" style="max-width: 560px; width: 92vw;">
+        <h3 id="sectionStudentsModalTitle">دانشجویان کلاس</h3>
+        <div class="table-wrap" style="max-height: 60vh;">
+          <table class="table" id="sectionStudentsTable" role="table" aria-label="لیست دانشجویان">
+            <thead>
+              <tr>
+                <th scope="col">کد دانشجو</th>
+                <th scope="col">نام</th>
+                <th scope="col">عملیات</th>
+              </tr>
+            </thead>
+            <tbody id="sectionStudentsTbody">
+              <tr><td colspan="3" class="muted">در حال بارگذاری...</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="modal-actions" style="margin-top: 12px;">
+          <button type="button" id="closeSectionStudentsModal" class="btn ghost">بستن</button>
+        </div>
       </div>
     </div>
 

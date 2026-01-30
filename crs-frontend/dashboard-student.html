@@ -32,6 +32,10 @@
           >
             📚 همه سکشن‌ها
           </button>
+
+          <button class="menu-item" data-panel="enrollments">
+            📝 سکشن‌های ثبت‌نام‌شده
+          </button>
         </nav>
 
         <div class="sidebar-footer">
@@ -94,15 +98,53 @@
               >
                 <thead>
                   <tr>
+                    <th scope="col">کد درس</th>
                     <th scope="col">نام درس</th>
                     <th scope="col">استاد</th>
-                    <th scope="col">کلاس</th>
                     <th scope="col">واحد</th>
                     <th scope="col">زمان‌بندی</th>
                     <th scope="col">ظرفیت</th>
+                    <th scope="col">عملیات</th>
                   </tr>
                 </thead>
                 <tbody id="sectionsTbody">
+                  <tr>
+                    <td colspan="6" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: ENROLLMENTS -->
+          <section id="panel-enrollments" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>سکشن‌های ثبت‌نام‌شده</h2>
+              <div class="panel-actions">
+                <button id="refreshEnrollments" class="btn ghost">رفرش</button>
+              </div>
+            </div>
+
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="enrollmentsTable"
+                role="table"
+                aria-label="سکشن‌های ثبت‌نام‌شده"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">کد درس</th>
+                    <th scope="col">نام درس</th>
+                    <th scope="col">واحد</th>
+                    <th scope="col">استاد</th>
+                    <th scope="col">کلاس</th>
+                    <th scope="col">زمان‌بندی</th>
+                    <th scope="col">وضعیت</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="enrollmentsTbody">
                   <tr>
                     <td colspan="6" class="muted">در حال بارگذاری...</td>
                   </tr>

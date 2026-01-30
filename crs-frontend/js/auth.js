@@ -95,16 +95,21 @@ async function doLogin() {
         ? payload.user.roles[0]
         : payload.user.roles;
 
-    let redirect = "/../dashboard-student.html";
+    const base = window.location.pathname.substring(
+      0,
+      window.location.pathname.lastIndexOf("/") + 1
+    );
+
+    let redirect = base + "dashboard-student.html";
+
     if (role) {
       const r = String(role).toLowerCase();
-      if (r.includes("admin"))
-        redirect = "/../dashboard-admin.html";
+      if (r.includes("admin")) redirect = base + "dashboard-admin.html";
       else if (r.includes("prof") || r.includes("teacher"))
-        redirect = "/../dashboard-professor.html";
-      else redirect = "/../dashboard-student.html";
+        redirect = base + "dashboard-professor.html";
+      else redirect = base + "dashboard-student.html";
     } else {
-      redirect = "/../dashboard-student.html";
+      redirect = base + "dashboard-student.html";
     }
 
     showMessage("ورود موفق — در حال هدایت...", { type: "success" });
