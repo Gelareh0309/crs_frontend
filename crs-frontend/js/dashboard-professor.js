@@ -295,8 +295,8 @@ async function openStudentsModal(sectionId) {
           <td>${code}</td>
           <td>${name}</td>
           <td>
-            <button type="button" class="btn ghost small" data-action="remove-student" data-student-id="${studentId}">حذف از کلاس</button>
-          </td>
+            <button type="button" class="btn danger small" data-action="remove-student" data-student-id="${studentId}">حذف از کلاس</button>
+            </td>
         </tr>`;
       })
       .join("");

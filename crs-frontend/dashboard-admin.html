@@ -54,7 +54,6 @@
           <button class="menu-item" data-panel="create-user">
             ➕ افزودن کاربر
           </button>
-          <button class="menu-item" data-panel="profile">⚙️ پروفایل</button>
         </nav>
 
         <div class="sidebar-footer">
@@ -568,8 +567,10 @@
           <option value="LAB">آزمایشگاه</option>
           <option value="ELECTIVE">اختیاری</option>
         </select>
-        <label>رشته</label>
-        <input id="mField" type="text" />
+        <label for="mField">رشته</label>
+        <select id="mField">
+          <option value="" disabled selected>انتخاب رشته…</option>
+        </select>
         <label>کد</label>
         <input id="mLessonId" type="text" />
         <label for="mPrereq">پیش‌نیازها (قابل انتخاب چندگانه)</label>

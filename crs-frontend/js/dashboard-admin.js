@@ -461,7 +461,10 @@ async function loadSections(search = "") {
             ).trim()) ||
           (s.professorUser && s.professorUser.username) ||
           "-";
-        const classroomLabel = (s.classroom && s.classroom.room_number) || "-";
+        const classroomLabel =
+          `${s.classroom && s.classroom.room_number} - ${
+            s.classroomFaculty[0].name || s.classroom?.faculty?.title || ""
+          }` || "-";
         const capacity = s.capacity ?? "-";
         const schedulesText = Array.isArray(s.schedules)
           ? s.schedules
@@ -850,7 +853,11 @@ async function populateSectionSelects(
     if (Array.isArray(classrooms) && classrooms.length) {
       classSel.innerHTML = classrooms
         .map((c) => {
-          const label = c.room_number || c.roomNumber || "کلاس بدون شماره";
+          console.log(c);
+          const label =
+            `${c.room_number || c.roomNumber} - ${
+              c.faculty?.name || c.faculty?.title || ""
+            }` || "کلاس بدون شماره";
           const id = c._id || c.id;
           return `<option value="${id}" ${
             selectedClassroomId && selectedClassroomId === id ? "selected" : ""
@@ -1388,11 +1395,44 @@ $("#openAddLesson").addEventListener("click", async () => {
   $("#mTitle").value = "";
   $("#mUnit").value = 1;
   $("#mType").value = "";
-  $("#mField").value = "";
   $("#mLessonId").value = "";
+  await populateLessonMajorSelect();
   await populatePrereqSelect();
   openModal("lessonModal");
 });
+
+async function populateLessonMajorSelect(selectedCode = "") {
+  const sel = $("#mField");
+  if (!sel) return;
+  sel.innerHTML =
+    '<option value="" disabled selected>در حال بارگذاری…</option>';
+  try {
+    const majors = await apiFetch(ENDPOINTS.MAJOR);
+    if (!Array.isArray(majors) || majors.length === 0) {
+      sel.innerHTML = '<option value="" disabled>رشته‌ای یافت نشد</option>';
+      return;
+    }
+    sel.innerHTML =
+      '<option value="" disabled selected>انتخاب رشته…</option>' +
+      '<option value="همه رشته ها" >تمام رشته ها</option>' +
+      majors
+        .map(
+          (m) =>
+            `<option value="${m.title || ""}" ${
+              selectedCode &&
+              (m.code === selectedCode || m._id === selectedCode)
+                ? "selected"
+                : ""
+            }>${escapeHtml(
+              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : "")
+            )}</option>`
+        )
+        .join("");
+  } catch (e) {
+    console.error(e);
+    sel.innerHTML = '<option value="" disabled>خطا در دریافت رشته‌ها</option>';
+  }
+}
 
 async function populatePrereqSelect(selectedIds = []) {
   const sel = $("#mPrereq");
@@ -1418,7 +1458,7 @@ $("#saveLesson").addEventListener("click", async () => {
   const title = $("#mTitle").value.trim();
   const unit = Number($("#mUnit").value) || 1;
   const type = $("#mType").value.trim();
-  const field = $("#mField").value.trim();
+  const field = $("#mField").value || ""; // major code from select
   const lessonId = $("#mLessonId").value.trim();
   const prerequisite = Array.from($("#mPrereq").selectedOptions).map(
     (o) => o.value
@@ -1426,6 +1466,10 @@ $("#saveLesson").addEventListener("click", async () => {
 
   if (!title) {
     alert("عنوان را وارد کنید");
+    return;
+  }
+  if (!field) {
+    alert("لطفاً رشته را انتخاب کنید.");
     return;
   }
   try {
@@ -1463,8 +1507,13 @@ async function openLessonEdit(id) {
     $("#mTitle").value = data.title || "";
     $("#mUnit").value = data.unit || 1;
     $("#mType").value = data.type || "";
-    $("#mField").value = data.field || "";
     $("#mLessonId").value = data.lessonId || "";
+    const majorCode =
+      data.field ||
+      (data.major && (data.major.code || data.major._id)) ||
+      data.majorCode ||
+      "";
+    await populateLessonMajorSelect(majorCode);
     const preIds = Array.isArray(data.prerequisite)
       ? data.prerequisite.map((p) => p._id || p.id)
       : [];

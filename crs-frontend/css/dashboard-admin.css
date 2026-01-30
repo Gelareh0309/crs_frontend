@@ -74,6 +74,8 @@ button{font-family:inherit}
 .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:700}
 .btn.primary{background:linear-gradient(90deg,var(--accent1),var(--accent2));color:#05203a}
 .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--text)}
+.btn.danger{background:#c92a2a;border:1px solid rgba(255,255,255,0.1);color:#fff}
+.btn.danger:hover{background:#a61e1e}
 
 /* form */
 .form-card{padding:16px;border-radius:12px}
