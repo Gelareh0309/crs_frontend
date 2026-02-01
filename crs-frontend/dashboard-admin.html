@@ -260,13 +260,14 @@
                     <th scope="col">رشته</th>
                     <th scope="col">حداقل واحد</th>
                     <th scope="col">حداکثر واحد</th>
+                    <th scope="col">درس‌های پاس‌شده</th>
                     <th scope="col">تاریخ ایجاد</th>
                     <th scope="col">عملیات</th>
                   </tr>
                 </thead>
                 <tbody id="studentsTbody">
                   <tr>
-                    <td colspan="7" class="muted">در حال بارگذاری...</td>
+                    <td colspan="8" class="muted">در حال بارگذاری...</td>
                   </tr>
                 </tbody>
               </table>
@@ -665,6 +666,20 @@
 
         <label>حداکثر واحد مجاز</label>
         <input id="stMaxUnit" type="number" min="0" />
+
+        <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border, #e5e7eb);">
+          <label class="label">درس‌های پاس‌شده</label>
+          <ul id="stLessonsPassedList" class="muted small" style="margin: 8px 0; padding-right: 20px; max-height: 120px; overflow-y: auto;"></ul>
+          <div style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 160px;">
+              <label class="label small">افزودن درس پاس‌شده</label>
+              <select id="stAddLessonPassed">
+                <option value="" disabled selected>انتخاب درس…</option>
+              </select>
+            </div>
+            <button type="button" id="stAddLessonPassedBtn" class="btn ghost">افزودن</button>
+          </div>
+        </div>
 
         <div class="modal-actions" style="margin-top: 16px">
           <button id="closeStudent" class="btn ghost">انصراف</button>

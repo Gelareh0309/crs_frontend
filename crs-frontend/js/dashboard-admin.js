@@ -6,6 +6,7 @@ const ENDPOINTS = {
   CLASSROOM: "/classroom",
   SECTION: "/section",
   CREATE_STUDENT: "/student",
+  LESSON_PASSED: "/student/lesson/passed",
   CREATE_PROFESSOR: "/professor",
   CREATE_ADMIN: "/admin",
   CHANGE_PASS: "/change-password",
@@ -28,7 +29,7 @@ const escapeHtml = (s) =>
             ">": "&gt;",
             '"': "&quot;",
             "'": "&#39;",
-          }[c])
+          })[c],
       );
 
 /* format date => YYYY-MM-DD | HH:MM (local) */
@@ -62,7 +63,7 @@ function removeToken() {
 /* fetch wrapper */
 async function apiFetch(
   path,
-  { method = "GET", body = null, auth = true } = {}
+  { method = "GET", body = null, auth = true } = {},
 ) {
   const headers = { "Content-Type": "application/json" };
   if (auth) {
@@ -91,7 +92,7 @@ function setActivePanel(name) {
   $$(".menu-item").forEach((btn) => {
     btn.classList.toggle(
       "active",
-      btn.dataset.panel === name || btn.dataset.section === name
+      btn.dataset.panel === name || btn.dataset.section === name,
     );
   });
   // title
@@ -126,8 +127,8 @@ function setActivePanel(name) {
       id === "panel-" + name.replace("create-user", "create-user")
         ? "block"
         : el.id === "panel-" + name
-        ? "block"
-        : "none";
+          ? "block"
+          : "none";
   });
   // special: map names:
   if (name === "create-user")
@@ -228,10 +229,10 @@ async function loadOverview() {
       <div class="activity-item">
         <div>${escapeHtml(l.title)}</div>
         <div class="muted small">${formatDateISO(
-          l.createdAt || l.createdAt
+          l.createdAt || l.createdAt,
         )}</div>
       </div>
-    `
+    `,
           )
           .join("")
       : '<div class="muted">موردی وجود ندارد</div>';
@@ -273,7 +274,7 @@ async function loadLessons() {
             else if (l.createdBy._id) creator = `کاربر #${l.createdBy._id}`;
           }
         }
-        console.log(l);
+
         return `<tr>
         <td>
           <div class="lesson-title">${escapeHtml(l.title || "")}</div>
@@ -284,7 +285,7 @@ async function loadLessons() {
         <td>${escapeHtml(l.field || "")}</td>
         <td>${escapeHtml(l.lessonId || "")}</td>
         <td>${escapeHtml(
-          l?.prerequisite?.map((p) => p.title).join(", ") || ""
+          l?.prerequisite?.map((p) => p.title).join(", ") || "",
         )}</td>
         <td>${formatDateISO(l.createdAt || l.createdAt)}</td>
         <td style="white-space:nowrap">
@@ -321,6 +322,7 @@ let currentSectionEditId = null;
 /* students table */
 const studentsTbody = $("#studentsTbody");
 let currentStudentEditId = null;
+let currentStudentStudentId = null; // studentId (code) for lesson-passed API
 
 /* professors table */
 const professorsTbody = $("#professorsTbody");
@@ -537,7 +539,7 @@ $("#saveMajor")?.addEventListener("click", async () => {
         {
           method: "PUT",
           body: { title, code },
-        }
+        },
       );
     } else {
       await apiFetch(ENDPOINTS.MAJOR, {
@@ -613,7 +615,7 @@ $("#saveFaculty")?.addEventListener("click", async () => {
         {
           method: "PUT",
           body: { name },
-        }
+        },
       );
     } else {
       await apiFetch(ENDPOINTS.FACULTY, {
@@ -633,7 +635,7 @@ $("#saveFaculty")?.addEventListener("click", async () => {
 async function openFacultyEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.FACULTY + "/" + encodeURIComponent(id)
+      ENDPOINTS.FACULTY + "/" + encodeURIComponent(id),
     );
     currentFacultyEditId = id;
     $("#facultyModalTitle").textContent = "ویرایش دانشکده";
@@ -730,7 +732,7 @@ $("#saveClassroom")?.addEventListener("click", async () => {
         {
           method: "PUT",
           body,
-        }
+        },
       );
     } else {
       await apiFetch(ENDPOINTS.CLASSROOM, {
@@ -750,7 +752,7 @@ $("#saveClassroom")?.addEventListener("click", async () => {
 async function openClassroomEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.CLASSROOM + "/" + encodeURIComponent(id)
+      ENDPOINTS.CLASSROOM + "/" + encodeURIComponent(id),
     );
     currentClassroomEditId = id;
     $("#classroomModalTitle").textContent = "ویرایش کلاس";
@@ -810,7 +812,7 @@ $("#refreshSections")?.addEventListener("click", () => {
 async function populateSectionSelects(
   selectedProfessorId = "",
   selectedClassroomId = "",
-  selectedLessonId = ""
+  selectedLessonId = "",
 ) {
   const profSel = $("#secProfessor");
   const classSel = $("#secClassroom");
@@ -853,7 +855,6 @@ async function populateSectionSelects(
     if (Array.isArray(classrooms) && classrooms.length) {
       classSel.innerHTML = classrooms
         .map((c) => {
-          console.log(c);
           const label =
             `${c.room_number || c.roomNumber} - ${
               c.faculty?.name || c.faculty?.title || ""
@@ -993,7 +994,7 @@ $("#saveSection")?.addEventListener("click", async () => {
         {
           method: "PUT",
           body,
-        }
+        },
       );
     } else {
       await apiFetch(ENDPOINTS.SECTION, {
@@ -1013,7 +1014,7 @@ $("#saveSection")?.addEventListener("click", async () => {
 async function openSectionEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.SECTION + "/" + encodeURIComponent(id)
+      ENDPOINTS.SECTION + "/" + encodeURIComponent(id),
     );
     currentSectionEditId = id;
     $("#sectionModalTitle").textContent = "ویرایش سکشن";
@@ -1041,7 +1042,7 @@ async function openSectionEdit(id) {
         addScheduleRow(
           sch.day_of_week || "MONDAY",
           sch.start_time || "",
-          sch.endTime || ""
+          sch.endTime || "",
         );
       });
     } else {
@@ -1071,11 +1072,11 @@ async function confirmSectionDelete(id) {
 
 /* ========== Students (list & update) ========== */
 async function loadStudents() {
-  studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">در حال بارگذاری...</td></tr>`;
+  studentsTbody.innerHTML = `<tr><td colspan="8" class="muted">در حال بارگذاری...</td></tr>`;
   try {
     const students = await apiFetch(ENDPOINTS.CREATE_STUDENT);
     if (!Array.isArray(students) || students.length === 0) {
-      studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">هیچ دانشجویی یافت نشد</td></tr>`;
+      studentsTbody.innerHTML = `<tr><td colspan="8" class="muted">هیچ دانشجویی یافت نشد</td></tr>`;
       return;
     }
     studentsTbody.innerHTML = students
@@ -1091,12 +1092,16 @@ async function loadStudents() {
           typeof s.minUnit === "number" ? String(s.minUnit) : s.minUnit || "-";
         const maxUnit =
           typeof s.maxUnit === "number" ? String(s.maxUnit) : s.maxUnit || "-";
+        const passedCount = Array.isArray(s.lessonPassed)
+          ? s.lessonPassed.length
+          : "—";
         return `<tr>
         <td>${escapeHtml(s.studentId || user.username || "-")}</td>
         <td>${escapeHtml(fullName || user.username || "-")}</td>
         <td>${escapeHtml(majorTitle)}</td>
         <td>${escapeHtml(minUnit)}</td>
         <td>${escapeHtml(maxUnit)}</td>
+        <td>${escapeHtml(passedCount)}</td>
         <td>${formatDateISO(s.createdAt)}</td>
         <td style="white-space:nowrap">
           <button class="btn ghost" data-action="edit" data-id="${
@@ -1111,7 +1116,7 @@ async function loadStudents() {
       .join("");
   } catch (err) {
     console.error(err);
-    studentsTbody.innerHTML = `<tr><td colspan="7" class="muted">خطا در دریافت دانشجویان</td></tr>`;
+    studentsTbody.innerHTML = `<tr><td colspan="8" class="muted">خطا در دریافت دانشجویان</td></tr>`;
   }
 }
 
@@ -1128,12 +1133,39 @@ $("#refreshStudents")?.addEventListener("click", () => {
   loadStudents();
 });
 
+function renderStudentLessonsPassed(lessonsPassed) {
+  const listEl = $("#stLessonsPassedList");
+  if (!listEl) return;
+  if (!Array.isArray(lessonsPassed) || lessonsPassed.length === 0) {
+    listEl.innerHTML = '<li class="muted">هنوز درسی پاس نشده</li>';
+    return;
+  }
+  listEl.innerHTML = lessonsPassed
+    .map((p) => {
+      const lesson = p.lesson || p;
+      const title = lesson.title || lesson.lessonId || "-";
+      const code = lesson.lessonId || lesson._id || "";
+      const lessonId = lesson.lessonId || lesson._id || "";
+      return `<li style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin:4px 0">
+        <span>${escapeHtml(title)}${
+          code ? " (" + escapeHtml(code) + ")" : ""
+        }</span>
+        <button type="button" class="btn ghost small" data-action="remove-lesson" data-lesson-id="${escapeHtml(
+          lessonId,
+        )}" style="flex-shrink:0;padding:4px 8px;font-size:12px;background:#ef4444;color:white">حذف</button>
+      </li>`;
+    })
+    .join("");
+}
+
 async function openStudentEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(id)
+      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(id),
     );
     currentStudentEditId = id;
+    currentStudentStudentId =
+      data.studentId || (data.user && data.user.username) || "";
     $("#studentModalTitle").textContent = "ویرایش دانشجو";
 
     const user = data.user || {};
@@ -1150,6 +1182,41 @@ async function openStudentEdit(id) {
       typeof data.minUnit === "number" ? data.minUnit : data.minUnit || "";
     $("#stMaxUnit").value =
       typeof data.maxUnit === "number" ? data.maxUnit : data.maxUnit || "";
+
+    renderStudentLessonsPassed(data.lessonPassed);
+
+    const lessonSel = $("#stAddLessonPassed");
+    if (lessonSel) {
+      lessonSel.innerHTML =
+        '<option value="" disabled selected>در حال بارگذاری…</option>';
+      try {
+        const lessons = await apiFetch(ENDPOINTS.LESSON);
+        const passedIds = new Set(
+          (Array.isArray(data.lessonsPassed) ? data.lessonsPassed : []).map(
+            (p) =>
+              (p.lesson && (p.lesson._id || p.lesson.lessonId)) ||
+              p.lessonId ||
+              p,
+          ),
+        );
+        lessonSel.innerHTML =
+          '<option value="" disabled selected>انتخاب درس…</option>' +
+          (Array.isArray(lessons) ? lessons : [])
+            .filter((l) => !passedIds.has(l._id) && !passedIds.has(l.lessonId))
+            .map(
+              (l) =>
+                `<option value="${escapeHtml(
+                  l.lessonId || l._id || "",
+                )}">${escapeHtml(
+                  (l.title || "") + (l.lessonId ? " (" + l.lessonId + ")" : ""),
+                )}</option>`,
+            )
+            .join("");
+      } catch (e) {
+        lessonSel.innerHTML =
+          '<option value="" disabled>خطا در بارگذاری دروس</option>';
+      }
+    }
 
     openModal("studentModal");
   } catch (err) {
@@ -1192,7 +1259,7 @@ $("#saveStudent")?.addEventListener("click", async () => {
       {
         method: "PUT",
         body,
-      }
+      },
     );
     closeModal("studentModal");
     await loadStudents();
@@ -1204,7 +1271,7 @@ $("#saveStudent")?.addEventListener("click", async () => {
 
 async function confirmStudentDelete(id) {
   const ok = window.confirm(
-    "آیا از حذف این دانشجو مطمئن هستید؟ این عمل برگشت‌پذیر نیست."
+    "آیا از حذف این دانشجو مطمئن هستید؟ این عمل برگشت‌پذیر نیست.",
   );
   if (!ok) return;
   try {
@@ -1217,6 +1284,100 @@ async function confirmStudentDelete(id) {
     alert(err?.message || "خطا در حذف دانشجو");
   }
 }
+
+$("#stAddLessonPassedBtn")?.addEventListener("click", async () => {
+  const lessonId = $("#stAddLessonPassed")?.value?.trim();
+  if (!currentStudentStudentId || !lessonId) {
+    alert("لطفاً یک درس را انتخاب کنید.");
+    return;
+  }
+  try {
+    await apiFetch(ENDPOINTS.LESSON_PASSED, {
+      method: "POST",
+      body: { studentId: currentStudentStudentId, lessonId },
+    });
+    const data = await apiFetch(
+      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(currentStudentEditId),
+    );
+    renderStudentLessonsPassed(data.lessonPassed);
+    const lessonSel = $("#stAddLessonPassed");
+    if (lessonSel) {
+      const lessons = await apiFetch(ENDPOINTS.LESSON);
+
+      const passedIds = new Set(
+        (Array.isArray(data.lessonsPassed) ? data.lessonsPassed : []).map(
+          (p) =>
+            (p.lesson && (p.lesson._id || p.lesson.lessonId)) ||
+            p.lessonId ||
+            p,
+        ),
+      );
+      lessonSel.innerHTML =
+        '<option value="" disabled selected>انتخاب درس…</option>' +
+        (Array.isArray(lessons) ? lessons : [])
+          .filter((l) => !passedIds.has(l._id) && !passedIds.has(l.lessonId))
+          .map(
+            (l) =>
+              `<option value="${escapeHtml(
+                l.lessonId || l._id || "",
+              )}">${escapeHtml(
+                (l.title || "") + (l.lessonId ? " (" + l.lessonId + ")" : ""),
+              )}</option>`,
+          )
+          .join("");
+    }
+    await loadStudents();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در ثبت درس پاس‌شده");
+  }
+});
+
+$("#stLessonsPassedList")?.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-action='remove-lesson']");
+  if (!btn) return;
+  const lessonId = btn.dataset.lessonId?.trim();
+  if (!currentStudentStudentId || !lessonId) return;
+  try {
+    await apiFetch(ENDPOINTS.LESSON_PASSED, {
+      method: "DELETE",
+      body: { studentId: currentStudentStudentId, lessonId },
+    });
+    const data = await apiFetch(
+      ENDPOINTS.CREATE_STUDENT + "/" + encodeURIComponent(currentStudentEditId),
+    );
+    renderStudentLessonsPassed(data.lessonPassed);
+    const lessonSel = $("#stAddLessonPassed");
+    if (lessonSel) {
+      const lessons = await apiFetch(ENDPOINTS.LESSON);
+      const passedIds = new Set(
+        (Array.isArray(data.lessonPassed) ? data.lessonPassed : []).map(
+          (p) =>
+            (p.lesson && (p.lesson._id || p.lesson.lessonId)) ||
+            p.lessonId ||
+            p,
+        ),
+      );
+      lessonSel.innerHTML =
+        '<option value="" disabled selected>انتخاب درس…</option>' +
+        (Array.isArray(lessons) ? lessons : [])
+          .filter((l) => !passedIds.has(l._id) && !passedIds.has(l.lessonId))
+          .map(
+            (l) =>
+              `<option value="${escapeHtml(
+                l.lessonId || l._id || "",
+              )}">${escapeHtml(
+                (l.title || "") + (l.lessonId ? " (" + l.lessonId + ")" : ""),
+              )}</option>`,
+          )
+          .join("");
+    }
+    await loadStudents();
+  } catch (err) {
+    console.error(err);
+    alert(err?.message || "خطا در حذف درس پاس‌شده");
+  }
+});
 
 /* ========== Professors (list & update) ========== */
 async function loadProfessors() {
@@ -1302,7 +1463,7 @@ async function populateProfessorFacultySelect(selectedId = "") {
 async function openProfessorEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.CREATE_PROFESSOR + "/" + encodeURIComponent(id)
+      ENDPOINTS.CREATE_PROFESSOR + "/" + encodeURIComponent(id),
     );
     currentProfessorEditId = id;
     $("#professorModalTitle").textContent = "ویرایش استاد";
@@ -1352,7 +1513,7 @@ $("#saveProfessor")?.addEventListener("click", async () => {
       {
         method: "PUT",
         body,
-      }
+      },
     );
     closeModal("professorModal");
     await loadProfessors();
@@ -1364,7 +1525,7 @@ $("#saveProfessor")?.addEventListener("click", async () => {
 
 async function confirmProfessorDelete(id) {
   const ok = window.confirm(
-    "آیا از حذف این استاد مطمئن هستید؟ این عمل برگشت‌پذیر نیست."
+    "آیا از حذف این استاد مطمئن هستید؟ این عمل برگشت‌پذیر نیست.",
   );
   if (!ok) return;
   try {
@@ -1419,13 +1580,10 @@ async function populateLessonMajorSelect(selectedCode = "") {
         .map(
           (m) =>
             `<option value="${m.title || ""}" ${
-              selectedCode &&
-              (m.code === selectedCode || m._id === selectedCode)
-                ? "selected"
-                : ""
+              selectedCode && m.title === selectedCode ? "selected" : ""
             }>${escapeHtml(
-              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : "")
-            )}</option>`
+              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : ""),
+            )}</option>`,
         )
         .join("");
   } catch (e) {
@@ -1445,7 +1603,7 @@ async function populatePrereqSelect(selectedIds = []) {
         (l) =>
           `<option value="${l._id || l.id}" ${
             selectedIds.includes(l._id || l.id) ? "selected" : ""
-          }>${escapeHtml(l.title)}</option>`
+          }>${escapeHtml(l.title)}</option>`,
       )
       .join("");
   } catch (e) {
@@ -1461,7 +1619,7 @@ $("#saveLesson").addEventListener("click", async () => {
   const field = $("#mField").value || ""; // major code from select
   const lessonId = $("#mLessonId").value.trim();
   const prerequisite = Array.from($("#mPrereq").selectedOptions).map(
-    (o) => o.value
+    (o) => o.value,
   );
 
   if (!title) {
@@ -1479,7 +1637,7 @@ $("#saveLesson").addEventListener("click", async () => {
         {
           method: "PUT",
           body: { title, unit, type, field, lessonId, prerequisite },
-        }
+        },
       );
     } else {
       await apiFetch(ENDPOINTS.LESSON, {
@@ -1500,7 +1658,7 @@ $("#saveLesson").addEventListener("click", async () => {
 async function openLessonEdit(id) {
   try {
     const data = await apiFetch(
-      ENDPOINTS.LESSON + "/" + encodeURIComponent(id)
+      ENDPOINTS.LESSON + "/" + encodeURIComponent(id),
     );
     currentEditId = id;
     $("#lessonModalTitle").textContent = "ویرایش درس";
@@ -1536,9 +1694,13 @@ function confirmDelete(id) {
 $("#okConfirm").addEventListener("click", async () => {
   if (!deleteTargetId) return;
   try {
-    await apiFetch(deleteBaseUrl + "/" + encodeURIComponent(deleteTargetId), {
-      method: "DELETE",
-    });
+    await apiFetch(
+      ENDPOINTS.LESSON + "/" + encodeURIComponent(deleteTargetId),
+      {
+        method: "DELETE",
+      },
+    );
+
     closeModal("confirmModal");
     deleteTargetId = null;
     loadLessons();
@@ -1570,12 +1732,12 @@ $("#closeLesson").addEventListener("click", () => closeModal("lessonModal"));
 $("#closeFaculty")?.addEventListener("click", () => closeModal("facultyModal"));
 $("#closeMajor")?.addEventListener("click", () => closeModal("majorModal"));
 $("#closeClassroom")?.addEventListener("click", () =>
-  closeModal("classroomModal")
+  closeModal("classroomModal"),
 );
 $("#closeSection")?.addEventListener("click", () => closeModal("sectionModal"));
 $("#closeStudent")?.addEventListener("click", () => closeModal("studentModal"));
 $("#closeProfessor")?.addEventListener("click", () =>
-  closeModal("professorModal")
+  closeModal("professorModal"),
 );
 $("#overlay").addEventListener("click", () => {
   closeModal("lessonModal");
@@ -1646,7 +1808,6 @@ async function populateProfessorCreateFacultySelect() {
 }
 
 async function populateMajorSelect() {
-  console.log();
   const sel = $("#uMajor");
   if (!sel) return;
   sel.innerHTML =
@@ -1663,8 +1824,8 @@ async function populateMajorSelect() {
         .map(
           (m) =>
             `<option value="${m.code || ""}">${escapeHtml(
-              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : "")
-            )}</option>`
+              (m.title || "بدون نام") + (m.code ? " (" + m.code + ")" : ""),
+            )}</option>`,
         )
         .join("");
   } catch (e) {
@@ -1779,7 +1940,7 @@ async function loadProfile() {
   try {
     // attempt decode token payload to get name/role
     const payload = JSON.parse(
-      atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))
+      atob(tok.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")),
     );
     $("#userName").textContent = payload.firstName
       ? payload.firstName + (payload.lastName ? " " + payload.lastName : "")
@@ -1790,8 +1951,8 @@ async function loadProfile() {
       payload.firstName
         ? payload.firstName[0]
         : payload.username
-        ? payload.username[0]
-        : "A"
+          ? payload.username[0]
+          : "A"
     ).toUpperCase();
     $("#profileFirst").value = payload.firstName || "";
     $("#profileLast").value = payload.lastName || "";
