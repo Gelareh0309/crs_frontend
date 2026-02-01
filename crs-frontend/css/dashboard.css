@@ -85,10 +85,10 @@ select.role-select{font-weight:700;background:linear-gradient(90deg, rgba(255,25
 .form-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
 
 /* modal + overlay */
-.overlay{position:fixed;inset:0;background: rgba(0,0,0,0.6);z-index:60}
+.overlay{position:fixed;inset:0;background: rgba(0,0,0,0.75);z-index:60}
 .hidden{display:none}
 .modal{position:fixed;right:50%;top:50%;transform:translate(50%,-50%);z-index:70}
-.modal-card{width:420px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));padding:18px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:var(--shadow)}
+.modal-card{width:420px;background:#111827;padding:20px;border-radius:14px;border:1px solid rgba(255,255,255,0.08);box-shadow:0 20px 40px rgba(0,0,0,0.6)}
 
 /* small modal */
 .modal.small .modal-card{width:360px}
