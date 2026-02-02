@@ -34,9 +34,15 @@ const ENDPOINTS = {
   CHANGE_PASS: "/change-password",
   LOGIN: "/login",
   REFRESH: "/refresh",
-  STUDENT_LESSONS: "/my-lessons"
+  STUDENT_LESSONS: "/my-lessons",
   TAKE_SECTION: "/take-section",
+  GET_SCHEDULE: "/student-schedule"
 };
+
+const SCHEDULE_COLORS = [
+  "#ef4444",  "#f97316",  "#facc15",  "#22c55e",  "#14b8a6",
+  "#3b82f6",  "#6366f1",  "#8b5cf6",  "#ec4899",  "#64748b",
+];
 
 const sectionsTbody = document.getElementById("sectionsTbody");
 const lessonsTbody = document.getElementById("lessonsTbody");
@@ -88,12 +94,14 @@ async function searchSection() {
 function setActivePanel(name) {
   const panels = {
     section: "panel-section",
-    lessons: "panel-lessons"
+    lessons: "panel-lessons",
+    schedule: "panel-schedule",
   };
   $$(".menu-item").forEach((btn) => btn.classList.toggle("active", btn.dataset.panel === name));
   $("#pageTitle").textContent = {
     section: "دروس ارائه شده",
-    lessons: "دروس اخذ شده"
+    lessons: "دروس اخذ شده",
+    schedule: "برنامه هفتگی",
     }[name] || "داشبورد";
   Object.values(panels).forEach((id) => {
     const el = $("#" + id);
@@ -261,6 +269,79 @@ async function loadLessons() {
     console.error(err);
     lessonsTbody.innerHTML = '<tr><td colspan="6" class="muted">خطا در دریافت دروس</td></tr>';
   }
+}
+
+function assignLessonColors(lessons) {
+  const shuffled = [...SCHEDULE_COLORS].sort(() => Math.random() - 0.5);
+  const colorMap = {};
+  let i = 0;
+  lessons.forEach((l) => {
+    const lessonId = l.lesson?._id;
+    if (!lessonId) return;
+    if (!colorMap[lessonId]) {
+      colorMap[lessonId] = shuffled[i % shuffled.length];
+      i++;
+    }
+  });
+  return colorMap;
+}
+
+// Load Weekly Schedule
+async function LoadSchedule() {
+  const container = $("#scheduleGrid");
+  container.innerHTML = '<div class="muted">در حال بارگذاری...</div>';
+  try {
+    const lessons = await apiFetch(ENDPOINTS.GET_LESSONS);
+    if (!Array.isArray(lessons) || lessons.length === 0) {
+      container.innerHTML = '<div class="muted">درسی برای نمایش وجود ندارد</div>';
+      return;
+    }
+    const lessonColors = assignLessonColors(lessons);
+    renderScheduleGrid(lessons, lessonColors);
+  } catch (err) {
+    console.error(err);
+    container.innerHTML = '<div class="muted">خطا در بارگذاری برنامه هفتگی</div>';
+  }
+}
+
+function renderScheduleGrid(lessons, lessonColors) {
+  const days = ["SATURDAY", "SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"];
+  const hours = Array.from({ length: 12 }, (_, i) => 8 + i);
+  let html = `
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th>ساعت</th>
+          ${days.map((d) => `<th>${dayNamesFa[d]}</th>`).join("")}
+        </tr>
+      </thead>
+      <tbody>
+  `;
+  hours.forEach((h) => {
+    html += `<tr><td>${h}:00</td>`;
+    days.forEach((day) => {
+      const cellLessons = [];
+      lessons.forEach((l) => {
+        (l.schedules || []).forEach((s) => {
+          if (
+            s.day_of_week === day &&
+            Number(s.start_time?.split(":")[0]) === h
+          ) {
+            cellLessons.push(`
+              <div class="schedule-item"
+                   style="background:${lessonColors[l.lesson._id]}">
+                ${escapeHtml(l.lesson.title)}
+              </div>
+            `);
+          }
+        });
+      });
+      html += `<td>${cellLessons.join("")}</td>`;
+    });
+    html += `</tr>`;
+  });
+  html += "</tbody></table>";
+  $("#scheduleGrid").innerHTML = html;
 }
 
 //hook menu
