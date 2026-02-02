@@ -30,7 +30,13 @@
             data-panel="section"
             aria-pressed="true"
           >
-            📚 همه سکشن‌ها
+            📚 دروس ارائه شده
+          </button>
+          <button class="menu-item" data-panel="lessons">
+            ✅📕 دروس اخذ شده
+          </button>
+          <button class="menu-item" data-panel="schedule">
+            📅 برنامه هفتگی
           </button>
         </nav>
 
@@ -48,7 +54,7 @@
             <button id="mobileToggle" class="icon-btn" aria-label="نمایش منو">
               ☰
             </button>
-            <h1 id="pageTitle" class="page-title">همه سکشن‌ها</h1>
+            <h1 id="pageTitle" class="page-title">مدیریت انتخاب واحد</h1>
           </div>
 
           <div class="right">
@@ -65,7 +71,7 @@
 
         <!-- content -->
         <main class="content" id="content" role="main">
-          <!-- PANEL: SECTIONS (all, read-only) -->
+          <!-- PANEL: SECTIONS -->
           <section
             id="panel-section"
             class="panel panel--active"
@@ -100,9 +106,42 @@
                     <th scope="col">واحد</th>
                     <th scope="col">زمان‌بندی</th>
                     <th scope="col">ظرفیت</th>
+                    <th scope="col">عملیات</th>
                   </tr>
                 </thead>
                 <tbody id="sectionsTbody">
+                  <tr>
+                    <td colspan="7" class="muted">در حال بارگذاری...</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <!-- PANEL: STUDENT'S LESSONS -->
+          <section id="panel-lessons" class="panel" style="display: none">
+            <div class="panel-header">
+              <h2>دروس اخذ شده</h2>
+            </div>
+
+            <div class="table-wrap" aria-live="polite">
+              <table
+                class="table"
+                id="lessonsTable"
+                role="table"
+                aria-label="لیست دروس"
+              >
+                <thead>
+                  <tr>
+                    <th scope="col">نام درس</th>
+                    <th scope="col">استاد</th>
+                    <th scope="col">کلاس</th>
+                    <th scope="col">واحد</th>
+                    <th scope="col">زمان‌بندی</th>
+                    <th scope="col">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="lessonsTbody">
                   <tr>
                     <td colspan="6" class="muted">در حال بارگذاری...</td>
                   </tr>
@@ -110,7 +149,31 @@
               </table>
             </div>
           </section>
+
         </main>
+      </div>
+    </div>
+    
+    <!-- Confirm Modal (Take & Delete Section) -->
+    <div
+      id="confirmModal"
+      class="modal small hidden"
+      role="alertdialog"
+      aria-modal="true"
+    >
+      <div class="modal-card">
+        <h3 id="confirmTitle">تأیید عملیات</h3>
+        <p id="confirmText">آیا از انجام این عملیات مطمئن هستید؟</p>
+        <div class="modal-actions">
+          <button id="cancelConfirm" class="btn ghost">خیر</button>
+          <button
+            id="okConfirm"
+            class="btn"
+            style="background: #ef4444; color: white"
+          >
+            بله
+          </button>
+        </div>
       </div>
     </div>
 
